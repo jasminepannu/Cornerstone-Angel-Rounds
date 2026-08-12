@@ -1,50 +1,41 @@
 // ============================================
 // CORNERSTONE ANGEL ROUNDS
-// The brain of the angel form.
-// Talks to Supabase to load angels/rooms and save rounds.
+// Room + per-bed structure
 // ============================================
 
-// Your Supabase connection info
 const SUPABASE_URL = 'https://qrvmlfkgpuqsogijlpoe.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_huOYD7VwHKdnYFx_iNqF6w_IzcnSCj0';
 
-// Create the Supabase client (renamed to 'db' to avoid conflict with the library)
 const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ============================================
-// STATE - the running memory of the current round
+// STATE
 // ============================================
 
 let currentStep = 1;
 let facilityPasscode = null;
 let angelsData = [];
 let routingRules = [];
+let bedsData = [];  // All beds from Supabase
 
 let roundData = {
   angel_role: null,
   angel_person: null,
   room_number: null,
   round_date: null,
+  // First Look
   name_on_door_correct: null,
-  floor_clear: null,
+  area_clear: null,
+  nothing_under_bed: null,
   room_free_of_odor: null,
   temperature_comfortable: null,
   walls_undamaged: null,
   bathroom_clean: null,
+  gloves_stocked: null,
+  linens_clean: null,
   closets_good_repair: null,
   room_notes: '',
-  resident_state: null,
-  resident_mood: null,
-  conversation_notes: '',
-  offered_help: null,
-  nails_ok: null,
-  grooming_ok: null,
-  appearance_clean: null,
-  pillow_comfortable: null,
-  pain_observed: null,
-  linens_clean: null,
-  abuse_concern: null,
-  resident_notes: '',
+  // Safety
   call_light_reach: null,
   call_light_works: null,
   water_pitcher_ok: null,
@@ -58,14 +49,19 @@ let roundData = {
   wound_dressing_done: null,
   enteral_correct: null,
   safety_notes: '',
+  // Staff
   staff_seen: null,
   staff_name_badge: null,
   staff_acknowledged: null,
   staff_notes: '',
+  // Wrap-up
   overall_rating: null,
   followup_needed: null,
   additional_notes: ''
 };
+
+// Per-bed data: one object per bed in the selected room
+let bedData = [];  // Array of { bed_code, resident_state, resident_mood, ... }
 
 let followupData = {
   category: null,
@@ -97,7 +93,6 @@ window.addEventListener('DOMContentLoaded', async () => {
     day: 'numeric'
   });
 
-  handleNailCheckVisibility(today);
   populateAngels();
   populateFollowupCategories();
 
@@ -107,42 +102,36 @@ window.addEventListener('DOMContentLoaded', async () => {
 });
 
 // ============================================
-// LOADING DATA FROM SUPABASE
+// LOAD DATA
 // ============================================
 
 async function loadFacilityData() {
   try {
-    const { data: settings, error: settingsError } = await db.from('settings').select('*');
-    if (settingsError) {
-      console.error('Settings error:', settingsError);
-    }
+    const { data: settings } = await db.from('settings').select('*');
     const passcodeRow = settings ? settings.find(s => s.key === 'facility_passcode') : null;
     facilityPasscode = passcodeRow ? passcodeRow.value : 'CCC2026';
-    console.log('Loaded passcode:', facilityPasscode);
 
-    const { data: angels, error: angelsError } = await db
-      .from('angels')
-      .select('*')
-      .eq('active', true)
-      .order('id');
-    if (angelsError) {
-      console.error('Angels error:', angelsError);
-    }
+    const { data: angels } = await db
+      .from('angels').select('*').eq('active', true).order('id');
     angelsData = angels || [];
-    console.log('Loaded angels:', angelsData.length);
 
-    const { data: rules, error: rulesError } = await db
-      .from('routing_rules')
-      .select('*')
-      .order('display_order');
-    if (rulesError) {
-      console.error('Routing rules error:', rulesError);
-    }
+    const { data: beds } = await db
+      .from('beds').select('*').eq('active', true).order('bed_code');
+    bedsData = beds || [];
+
+    const { data: rules } = await db
+      .from('routing_rules').select('*').order('display_order');
     routingRules = rules || [];
-    console.log('Loaded routing rules:', routingRules.length);
+
+    console.log('Loaded:', {
+      passcode: facilityPasscode,
+      angels: angelsData.length,
+      beds: bedsData.length,
+      rules: routingRules.length
+    });
   } catch (err) {
-    console.error('Error loading data from Supabase:', err);
-    alert('Could not connect to the database. Please refresh and try again.');
+    console.error('Error loading data:', err);
+    alert('Could not connect to the database. Please refresh.');
   }
 }
 
@@ -182,8 +171,10 @@ function goToStep(step) {
       }
     }
     if (currentStep === 3) {
-      if (!roundData.resident_state) {
-        alert('Please select the resident state before continuing.');
+      // Require at least one bed to have a state selected
+      const anyStateSelected = bedData.some(b => b.resident_state !== null);
+      if (!anyStateSelected) {
+        alert('Please select a state for at least one bed before continuing.');
         return;
       }
     }
@@ -223,6 +214,7 @@ function onAngelChange() {
   const select = document.getElementById('angel-select');
   const roomSelect = document.getElementById('room-select');
   roomSelect.innerHTML = '<option value="">Select room...</option>';
+  document.getElementById('bed-count-note').textContent = '';
 
   if (!select.value) {
     roundData.angel_role = null;
@@ -240,14 +232,165 @@ function onAngelChange() {
     opt.textContent = 'Room ' + room;
     roomSelect.appendChild(opt);
   });
+}
 
-  roomSelect.onchange = () => {
-    roundData.room_number = roomSelect.value;
-  };
+function onRoomChange() {
+  const roomSelect = document.getElementById('room-select');
+  roundData.room_number = roomSelect.value;
+
+  if (!roomSelect.value) {
+    document.getElementById('bed-count-note').textContent = '';
+    bedData = [];
+    return;
+  }
+
+  // Find beds for this room and prep bedData
+  const roomBeds = bedsData.filter(b => b.room_number === roomSelect.value);
+  bedData = roomBeds.map(b => ({
+    bed_code: b.bed_code,
+    resident_state: null,
+    resident_mood: null,
+    conversation_notes: '',
+    offered_help: null,
+    nails_ok: null,
+    grooming_ok: null,
+    appearance_clean: null,
+    pillow_comfortable: null,
+    pain_observed: null,
+    bed_notes: ''
+  }));
+
+  const bedCount = bedData.length;
+  document.getElementById('bed-count-note').textContent =
+    'This room has ' + bedCount + ' bed' + (bedCount === 1 ? '' : 's') +
+    ' to check.';
+
+  buildBedCards();
 }
 
 // ============================================
-// CHECKBOXES
+// BUILD PER-BED CARDS (Step 3)
+// ============================================
+
+function buildBedCards() {
+  const container = document.getElementById('bed-cards-container');
+  container.innerHTML = '';
+
+  const today = new Date();
+  const isMonday = today.getDay() === 1;
+
+  bedData.forEach((bed, idx) => {
+    const card = document.createElement('div');
+    card.className = 'bed-card';
+    card.style.cssText = 'margin-bottom: 24px; padding-bottom: 20px; border-bottom: 1px solid var(--border);';
+    if (idx === bedData.length - 1) card.style.borderBottom = 'none';
+
+    card.innerHTML = `
+      <div class="section-label" style="color: var(--purple); font-size: 14px; margin-top: 8px;">
+        Bed ${bed.bed_code}
+      </div>
+
+      <label>Resident state <span class="required">*</span></label>
+      <div class="state-grid">
+        <button type="button" class="state-btn" onclick="selectBedState(${idx}, this, 'awake')">Awake &amp; alert</button>
+        <button type="button" class="state-btn" onclick="selectBedState(${idx}, this, 'sleeping')">Sleeping</button>
+        <button type="button" class="state-btn" onclick="selectBedState(${idx}, this, 'away')">Away from room</button>
+        <button type="button" class="state-btn" onclick="selectBedState(${idx}, this, 'empty_bed')">Empty bed</button>
+        <button type="button" class="state-btn" onclick="selectBedState(${idx}, this, 'no_response')" style="grid-column: span 2;">Resident did not respond</button>
+      </div>
+
+      <div id="engaged-fields-${idx}" class="hidden">
+        <label>How is their mood?</label>
+        <div class="mood-scale">
+          <span class="mood-option" onclick="selectBedMood(${idx}, this, 'good')" title="Good">😊</span>
+          <span class="mood-option" onclick="selectBedMood(${idx}, this, 'okay')" title="Okay">😐</span>
+          <span class="mood-option" onclick="selectBedMood(${idx}, this, 'concerning')" title="Concerning">😟</span>
+        </div>
+
+        <label>Conversation notes</label>
+        <textarea id="conversation-notes-${idx}" placeholder="What did the resident share? Any concerns?"
+                  oninput="bedData[${idx}].conversation_notes = this.value"></textarea>
+
+        <div class="check-item" onclick="toggleBedCheck(${idx}, this, 'offered_help')">
+          <div class="circle"></div>
+          <span>I asked if I could help them</span>
+        </div>
+      </div>
+
+      <div class="section-label">Appearance</div>
+
+      <div class="check-item" onclick="toggleBedCheck(${idx}, this, 'appearance_clean')">
+        <div class="circle"></div>
+        <span>Clean — no crumbs or stains</span>
+      </div>
+
+      <div class="check-item" onclick="toggleBedCheck(${idx}, this, 'grooming_ok')">
+        <div class="circle"></div>
+        <span>Grooming looks good</span>
+      </div>
+
+      <div class="check-item" onclick="toggleBedCheck(${idx}, this, 'pillow_comfortable')">
+        <div class="circle"></div>
+        <span>Pillow looks comfortable</span>
+      </div>
+
+      ${isMonday ? `
+      <div class="check-item" onclick="toggleBedCheck(${idx}, this, 'nails_ok')">
+        <div class="circle"></div>
+        <span>Nails checked and OK (weekly check today)</span>
+      </div>
+      ` : ''}
+
+      <div class="check-item" onclick="toggleBedCheck(${idx}, this, 'pain_observed')">
+        <div class="circle"></div>
+        <span>⚠️ Signs of pain observed</span>
+      </div>
+
+      <label>Notes for this bed</label>
+      <textarea id="bed-notes-${idx}" placeholder="Anything else specific to this bed..."
+                oninput="bedData[${idx}].bed_notes = this.value"></textarea>
+    `;
+
+    container.appendChild(card);
+  });
+
+  // Auto-mark nails as N/A on non-Mondays for all beds
+  if (!isMonday) {
+    bedData.forEach(bed => { bed.nails_ok = 'N/A'; });
+  }
+}
+
+function selectBedState(idx, btn, state) {
+  const card = btn.closest('.bed-card');
+  card.querySelectorAll('.state-btn').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  bedData[idx].resident_state = state;
+
+  const engagedFields = document.getElementById('engaged-fields-' + idx);
+  if (state === 'awake') {
+    engagedFields.classList.remove('hidden');
+  } else {
+    engagedFields.classList.add('hidden');
+    bedData[idx].resident_mood = null;
+    bedData[idx].conversation_notes = '';
+    bedData[idx].offered_help = null;
+  }
+}
+
+function selectBedMood(idx, el, mood) {
+  const card = el.closest('.bed-card');
+  card.querySelectorAll('.mood-option').forEach(m => m.classList.remove('selected'));
+  el.classList.add('selected');
+  bedData[idx].resident_mood = mood;
+}
+
+function toggleBedCheck(idx, el, field) {
+  el.classList.toggle('checked');
+  bedData[idx][field] = el.classList.contains('checked');
+}
+
+// ============================================
+// ROOM-LEVEL CHECKBOXES
 // ============================================
 
 function toggleCheck(el) {
@@ -268,45 +411,6 @@ function allClear(section) {
     });
     const allClearBtn = step.querySelector('.all-clear');
     allClearBtn.classList.add('checked');
-  }
-}
-
-// ============================================
-// STEP 3 - RESIDENT
-// ============================================
-
-function selectState(btn, state) {
-  document.querySelectorAll('#step-3 .state-btn').forEach(b => b.classList.remove('selected'));
-  btn.classList.add('selected');
-  roundData.resident_state = state;
-
-  const engagedFields = document.getElementById('engaged-fields');
-  if (state === 'awake') {
-    engagedFields.classList.remove('hidden');
-  } else {
-    engagedFields.classList.add('hidden');
-    roundData.resident_mood = null;
-    roundData.conversation_notes = '';
-    roundData.offered_help = null;
-  }
-}
-
-function selectMood(el, mood) {
-  document.querySelectorAll('.mood-option').forEach(m => m.classList.remove('selected'));
-  el.classList.add('selected');
-  roundData.resident_mood = mood;
-}
-
-function handleNailCheckVisibility(today) {
-  const isMonday = today.getDay() === 1;
-  const nailsEl = document.getElementById('nails-container');
-  const nailsLabel = document.getElementById('nails-label');
-
-  if (isMonday) {
-    nailsLabel.textContent = 'Nails checked and OK (weekly check today)';
-  } else {
-    nailsEl.classList.add('hidden');
-    roundData.nails_ok = 'N/A';
   }
 }
 
@@ -369,9 +473,8 @@ function populateFollowupCategories() {
 // ============================================
 
 async function submitRound() {
+  // Grab textareas
   roundData.room_notes = document.getElementById('room-notes').value;
-  roundData.conversation_notes = document.getElementById('conversation-notes').value;
-  roundData.resident_notes = document.getElementById('resident-notes').value;
   roundData.safety_notes = document.getElementById('safety-notes').value;
   roundData.staff_notes = document.getElementById('staff-notes').value;
   roundData.additional_notes = document.getElementById('additional-notes').value;
@@ -387,25 +490,31 @@ async function submitRound() {
   }
 
   try {
+    // Insert the parent round
     const { data: roundResult, error: roundError } = await db
       .from('rounds')
       .insert([roundData])
       .select();
 
     if (roundError) throw roundError;
-
     const newRoundId = roundResult[0].id;
 
+    // Insert one row per bed into round_beds
+    if (bedData.length > 0) {
+      const bedRows = bedData.map(b => ({ ...b, round_id: newRoundId }));
+      const { error: bedError } = await db.from('round_beds').insert(bedRows);
+      if (bedError) throw bedError;
+    }
+
+    // Follow-up action item
     if (roundData.followup_needed) {
       const rule = routingRules.find(r => r.category === followupData.category);
       const assignedRole = rule ? rule.routes_to_role : 'Administrator';
-
       let finalRole = assignedRole;
       const targetAngel = angelsData.find(a => a.role === assignedRole);
-      if (targetAngel && !targetAngel.current_person && rule.fallback_role) {
+      if (targetAngel && !targetAngel.current_person && rule && rule.fallback_role) {
         finalRole = rule.fallback_role;
       }
-
       const isUrgent = rule ? rule.urgent : false;
 
       await db.from('action_items').insert([{
@@ -416,23 +525,26 @@ async function submitRound() {
         category: followupData.category,
         assigned_to_role: finalRole,
         description: followupData.description,
-        urgent: isUrgent || roundData.abuse_concern
+        urgent: isUrgent
       }]);
     }
 
-    if (roundData.abuse_concern && !roundData.followup_needed) {
+    // Auto-flag urgent for pain observed on any bed
+    const bedsWithPain = bedData.filter(b => b.pain_observed);
+    for (const bed of bedsWithPain) {
       await db.from('action_items').insert([{
         round_id: newRoundId,
         room_number: roundData.room_number,
         reported_by_role: roundData.angel_role,
         reported_by_person: roundData.angel_person,
-        category: 'abuse_urgent',
-        assigned_to_role: 'Administrator',
-        description: 'Possible abuse indicator flagged during round',
+        category: 'clinical_urgent',
+        assigned_to_role: 'DON',
+        description: 'Signs of pain observed at Bed ' + bed.bed_code,
         urgent: true
       }]);
     }
 
+    // Auto-flag urgent for O2 mismatch
     if (roundData.o2_setting_correct === false) {
       await db.from('action_items').insert([{
         round_id: newRoundId,
@@ -458,16 +570,18 @@ function showSuccessScreen() {
   document.querySelector('.progress-dots').classList.add('hidden');
   document.getElementById('success-screen').classList.remove('hidden');
   document.getElementById('success-summary').textContent =
-    'Room ' + roundData.room_number + ' complete. Great work.';
+    'Room ' + roundData.room_number + ' complete (' + bedData.length + ' beds). Great work.';
 }
 
 function startNewRound() {
+  // Reset roundData except angel
   Object.keys(roundData).forEach(key => {
     if (key !== 'angel_role' && key !== 'angel_person' && key !== 'round_date') {
       roundData[key] = typeof roundData[key] === 'string' ? '' : null;
     }
   });
 
+  bedData = [];
   followupData = { category: null, description: '' };
 
   document.querySelectorAll('.check-item.checked').forEach(el => el.classList.remove('checked'));
@@ -476,11 +590,12 @@ function startNewRound() {
   document.querySelectorAll('textarea').forEach(t => t.value = '');
 
   document.getElementById('room-select').value = '';
+  document.getElementById('bed-count-note').textContent = '';
   roundData.room_number = null;
 
-  document.getElementById('engaged-fields').classList.add('hidden');
   document.getElementById('staff-fields').classList.add('hidden');
   document.getElementById('followup-fields').classList.add('hidden');
+  document.getElementById('bed-cards-container').innerHTML = '';
 
   document.querySelector('.progress-dots').classList.remove('hidden');
   document.getElementById('success-screen').classList.add('hidden');
