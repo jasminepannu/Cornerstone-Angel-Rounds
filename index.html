@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <meta name="theme-color" content="#5B2C87">
+  <title>Cornerstone Angel Rounds</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- ============================================
+       SCREEN 1: PASSCODE GATE
+       Shows first time on each device. Once entered
+       correctly, the device remembers it forever.
+       ============================================ -->
+  <div id="passcode-screen" class="passcode-gate">
+    <div class="brand">Cornerstone</div>
+    <div class="tagline">Angel Rounds</div>
+    <label for="passcode-input">Enter facility passcode</label>
+    <input type="password" id="passcode-input" placeholder="Passcode" autocomplete="off">
+    <div id="passcode-error" class="urgent-banner hidden" style="margin-top: 12px;">
+      Incorrect passcode. Try again.
+    </div>
+    <div class="button-row" style="margin-top: 20px;">
+      <button class="btn-primary" onclick="checkPasscode()">Continue</button>
+    </div>
+  </div>
+
+  <!-- ============================================
+       MAIN APP (hidden until passcode is entered)
+       ============================================ -->
+  <div id="app" class="hidden">
+
+    <!-- Header -->
+    <div class="header">
+      <div class="brand">Cornerstone</div>
+      <div class="subtitle">Angel Rounds · <span id="today-date"></span></div>
+    </div>
+
+    <div class="container">
+
+      <!-- Progress dots -->
+      <div class="progress-dots">
+        <div class="dot current" id="dot-1"></div>
+        <div class="dot" id="dot-2"></div>
+        <div class="dot" id="dot-3"></div>
+        <div class="dot" id="dot-4"></div>
+        <div class="dot" id="dot-5"></div>
+      </div>
+
+      <!-- ============================================
+           STEP 1: WHO & WHERE
+           ============================================ -->
+      <div id="step-1" class="step">
+        <div class="card">
+          <h2>Who & Where</h2>
+          <p class="subtitle">Identify yourself and the room.</p>
+
+          <label for="angel-select">Your role <span class="required">*</span></label>
+          <select id="angel-select" onchange="onAngelChange()">
+            <option value="">Select your role...</option>
+          </select>
+
+          <label for="date-display">Date</label>
+          <input type="text" id="date-display" readonly>
+
+          <label for="room-select">Room number <span class="required">*</span></label>
+          <select id="room-select">
+            <option value="">Select room...</option>
+          </select>
+        </div>
+
+        <div class="button-row">
+          <button class="btn-primary" onclick="goToStep(2)">Next</button>
+        </div>
+      </div>
+
+      <!-- ============================================
+           STEP 2: FIRST LOOK (Room Scan)
+           ============================================ -->
+      <div id="step-2" class="step hidden">
+        <div class="card">
+          <h2>First Look</h2>
+          <p class="subtitle">Scan the room before approaching the bed.</p>
+
+          <div class="section-label">Room condition</div>
+
+          <div class="check-item all-clear" onclick="allClear('firstlook')" data-field="firstlook-allclear">
+            <div class="circle"></div>
+            <span>Room all clear — everything looks good</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="name_on_door_correct">
+            <div class="circle"></div>
+            <span>Name on door correct</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="floor_clear">
+            <div class="circle"></div>
+            <span>Floor clear (no trash, belongings not on floor)</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="room_free_of_odor">
+            <div class="circle"></div>
+            <span>Room free of odor</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="temperature_comfortable">
+            <div class="circle"></div>
+            <span>Temperature comfortable</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="walls_undamaged">
+            <div class="circle"></div>
+            <span>Walls free of damage</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="bathroom_clean">
+            <div class="circle"></div>
+            <span>Bathroom clean and stocked</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="closets_good_repair">
+            <div class="circle"></div>
+            <span>Closets and dressers in good repair</span>
+          </div>
+
+          <label for="room-notes">Room notes</label>
+          <textarea id="room-notes" placeholder="Any room-level issues or observations..."></textarea>
+        </div>
+
+        <div class="button-row">
+          <button class="btn-secondary" onclick="goToStep(1)">Back</button>
+          <button class="btn-primary" onclick="goToStep(3)">Next</button>
+        </div>
+      </div>
+
+      <!-- ============================================
+           STEP 3: RESIDENT CHECK
+           ============================================ -->
+      <div id="step-3" class="step hidden">
+        <div class="card">
+          <h2>Resident Check</h2>
+          <p class="subtitle">Check the resident and their belongings.</p>
+
+          <label>Resident state <span class="required">*</span></label>
+          <div class="state-grid">
+            <button type="button" class="state-btn" onclick="selectState(this, 'awake')">Awake &amp; alert</button>
+            <button type="button" class="state-btn" onclick="selectState(this, 'sleeping')">Sleeping</button>
+            <button type="button" class="state-btn" onclick="selectState(this, 'away')">Away from room</button>
+            <button type="button" class="state-btn" onclick="selectState(this, 'bed_empty')">Bed empty</button>
+            <button type="button" class="state-btn" onclick="selectState(this, 'no_response')" style="grid-column: span 2;">Resident did not respond</button>
+          </div>
+
+          <!-- Mood + conversation only if resident engaged -->
+          <div id="engaged-fields" class="hidden">
+            <label>How is their mood?</label>
+            <div class="mood-scale">
+              <span class="mood-option" onclick="selectMood(this, 'good')" title="Good">😊</span>
+              <span class="mood-option" onclick="selectMood(this, 'okay')" title="Okay">😐</span>
+              <span class="mood-option" onclick="selectMood(this, 'concerning')" title="Concerning">😟</span>
+            </div>
+
+            <label for="conversation-notes">Conversation notes</label>
+            <textarea id="conversation-notes" placeholder="What did the resident share? Any concerns?"></textarea>
+
+            <div class="check-item" onclick="toggleCheck(this)" data-field="offered_help">
+              <div class="circle"></div>
+              <span>I asked if I could help them with anything</span>
+            </div>
+          </div>
+
+          <div class="section-label">Resident appearance</div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="appearance_clean">
+            <div class="circle"></div>
+            <span>Clean — no crumbs or stains</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="grooming_ok">
+            <div class="circle"></div>
+            <span>Grooming looks good</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="pillow_comfortable">
+            <div class="circle"></div>
+            <span>Pillow looks comfortable</span>
+          </div>
+
+          <div id="nails-container" class="check-item" onclick="toggleCheck(this)" data-field="nails_ok">
+            <div class="circle"></div>
+            <span id="nails-label">Nails checked and OK</span>
+          </div>
+
+          <div class="section-label">Concerns</div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="pain_observed">
+            <div class="circle"></div>
+            <span>⚠️ Signs of pain observed</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="linens_clean">
+            <div class="circle"></div>
+            <span>Bed linens, pillows, curtains free of stains</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="abuse_concern">
+            <div class="circle"></div>
+            <span>🚨 Possible abuse indicator</span>
+          </div>
+
+          <label for="resident-notes">Additional resident notes</label>
+          <textarea id="resident-notes" placeholder="Anything else to note about the resident..."></textarea>
+        </div>
+
+        <div class="button-row">
+          <button class="btn-secondary" onclick="goToStep(2)">Back</button>
+          <button class="btn-primary" onclick="goToStep(4)">Next</button>
+        </div>
+      </div>
+
+      <!-- ============================================
+           STEP 4: SAFETY & SUPPLIES
+           ============================================ -->
+      <div id="step-4" class="step hidden">
+        <div class="card">
+          <h2>Safety &amp; Supplies</h2>
+          <p class="subtitle">Check reach, labeling, equipment.</p>
+
+          <div class="section-label">Within reach</div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="call_light_reach">
+            <div class="circle"></div>
+            <span>Call light within reach</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="call_light_works">
+            <div class="circle"></div>
+            <span>Call light working</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="water_pitcher_ok">
+            <div class="circle"></div>
+            <span>Water pitcher clean and filled</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="tv_remote_reach">
+            <div class="circle"></div>
+            <span>TV remote / phone within reach</span>
+          </div>
+
+          <div class="section-label">Bed &amp; equipment</div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="bed_working">
+            <div class="circle"></div>
+            <span>Bed working, lowest position, brakes locked</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="o2_setting_correct">
+            <div class="circle"></div>
+            <span>🚨 O2 setting matches order (if applicable)</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="o2_tubing_labeled">
+            <div class="circle"></div>
+            <span>O2 tubing labeled and dated (if applicable)</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="o2_tubes_off_floor">
+            <div class="circle"></div>
+            <span>No tubes on the floor</span>
+          </div>
+
+          <div class="section-label">Labeling</div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="urinals_labeled">
+            <div class="circle"></div>
+            <span>Urinals/bedpans labeled with name only</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="food_labeled">
+            <div class="circle"></div>
+            <span>Opened food is labeled</span>
+          </div>
+
+          <div class="section-label">If applicable</div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="wound_dressing_done">
+            <div class="circle"></div>
+            <span>Wound dressing done / changed</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="enteral_correct">
+            <div class="circle"></div>
+            <span>Enteral: flushing done, formula dated and correct</span>
+          </div>
+
+          <label for="safety-notes">Safety notes</label>
+          <textarea id="safety-notes" placeholder="Any safety concerns to note..."></textarea>
+        </div>
+
+        <div class="button-row">
+          <button class="btn-secondary" onclick="goToStep(3)">Back</button>
+          <button class="btn-primary" onclick="goToStep(5)">Next</button>
+        </div>
+      </div>
+
+      <!-- ============================================
+           STEP 5: STAFF CHECK-IN + WRAP-UP
+           ============================================ -->
+      <div id="step-5" class="step hidden">
+        <div class="card">
+          <h2>Staff Check-in</h2>
+          <p class="subtitle">Connect with any CNA, LVN, or other staff nearby.</p>
+
+          <label>Did you see or speak to a staff member?</label>
+          <div class="state-grid">
+            <button type="button" class="state-btn" onclick="selectStaffSeen(this, true)">Yes</button>
+            <button type="button" class="state-btn" onclick="selectStaffSeen(this, false)">No — nobody nearby</button>
+          </div>
+
+          <div id="staff-fields" class="hidden">
+            <div class="check-item" onclick="toggleCheck(this)" data-field="staff_name_badge">
+              <div class="circle"></div>
+              <span>Staff had name badge visible</span>
+            </div>
+
+            <div class="check-item" onclick="toggleCheck(this)" data-field="staff_acknowledged">
+              <div class="circle"></div>
+              <span>Complimented them or asked how they're doing</span>
+            </div>
+
+            <div class="heart-tip">
+              💛 Catch someone doing something right — genuine appreciation matters.
+            </div>
+
+            <label for="staff-notes">Staff notes</label>
+            <textarea id="staff-notes" placeholder="Which staff, what was noted..."></textarea>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>Wrap-up</h2>
+          <p class="subtitle">Overall impression and any follow-ups.</p>
+
+          <label>How did this round feel overall?</label>
+          <div class="state-grid">
+            <button type="button" class="state-btn" onclick="selectRating(this, 'excellent')">Excellent</button>
+            <button type="button" class="state-btn" onclick="selectRating(this, 'good')">Good</button>
+            <button type="button" class="state-btn" onclick="selectRating(this, 'needs_work')">Needs Work</button>
+            <button type="button" class="state-btn" onclick="selectRating(this, 'concern')">Concern</button>
+          </div>
+
+          <label>Does anything need follow-up?</label>
+          <div class="state-grid">
+            <button type="button" class="state-btn" onclick="selectFollowup(this, true)">Yes</button>
+            <button type="button" class="state-btn" onclick="selectFollowup(this, false)">No — all clear</button>
+          </div>
+
+          <div id="followup-fields" class="hidden">
+            <label for="followup-category">Follow-up category</label>
+            <select id="followup-category">
+              <option value="">Select category...</option>
+            </select>
+
+            <label for="followup-description">Describe the follow-up</label>
+            <textarea id="followup-description" placeholder="What needs to be done? Which room? Any details..."></textarea>
+          </div>
+
+          <label for="additional-notes">Additional notes</label>
+          <textarea id="additional-notes" placeholder="Anything else to note about this round..."></textarea>
+        </div>
+
+        <div class="button-row">
+          <button class="btn-secondary" onclick="goToStep(4)">Back</button>
+          <button class="btn-submit" onclick="submitRound()">Submit Round</button>
+        </div>
+      </div>
+
+      <!-- ============================================
+           SUCCESS SCREEN (after submit)
+           ============================================ -->
+      <div id="success-screen" class="hidden">
+        <div class="success-check">
+          <div class="icon">✓</div>
+          <h2>Round submitted</h2>
+          <p id="success-summary">Great work.</p>
+          <div class="button-row" style="margin-top: 32px;">
+            <button class="btn-primary" onclick="startNewRound()">Round another room</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Supabase library - lets our app talk to the database -->
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <!-- Our app code -->
+  <script src="app.js"></script>
+</body>
+</html>
