@@ -8,25 +8,23 @@
 const SUPABASE_URL = 'https://qrvmlfkgpuqsogijlpoe.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_huOYD7VwHKdnYFx_iNqF6w_IzcnSCj0';
 
-// Create the Supabase client
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+// Create the Supabase client (renamed to 'db' to avoid conflict with the library)
+const db = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ============================================
 // STATE - the running memory of the current round
 // ============================================
 
 let currentStep = 1;
-let facilityPasscode = null;  // Loaded from settings table
-let angelsData = [];          // Loaded from angels table
-let routingRules = [];        // Loaded from routing_rules table
+let facilityPasscode = null;
+let angelsData = [];
+let routingRules = [];
 
-// The round being built right now
 let roundData = {
   angel_role: null,
   angel_person: null,
   room_number: null,
   round_date: null,
-  // First Look
   name_on_door_correct: null,
   floor_clear: null,
   room_free_of_odor: null,
@@ -35,7 +33,6 @@ let roundData = {
   bathroom_clean: null,
   closets_good_repair: null,
   room_notes: '',
-  // Resident
   resident_state: null,
   resident_mood: null,
   conversation_notes: '',
@@ -48,7 +45,6 @@ let roundData = {
   linens_clean: null,
   abuse_concern: null,
   resident_notes: '',
-  // Safety
   call_light_reach: null,
   call_light_works: null,
   water_pitcher_ok: null,
@@ -62,39 +58,32 @@ let roundData = {
   wound_dressing_done: null,
   enteral_correct: null,
   safety_notes: '',
-  // Staff
   staff_seen: null,
   staff_name_badge: null,
   staff_acknowledged: null,
   staff_notes: '',
-  // Wrap-up
   overall_rating: null,
   followup_needed: null,
   additional_notes: ''
 };
 
-// Follow-up details (creates a row in action_items on submit)
 let followupData = {
   category: null,
   description: ''
 };
 
 // ============================================
-// STARTUP - runs when the page loads
+// STARTUP
 // ============================================
 
 window.addEventListener('DOMContentLoaded', async () => {
-  // Load settings, angels, and routing rules from Supabase
   await loadFacilityData();
 
-  // Check if this device already knows the passcode
   const savedPasscode = localStorage.getItem('cornerstone_passcode');
   if (savedPasscode && savedPasscode === facilityPasscode) {
-    // Skip passcode screen, go straight to app
     showApp();
   }
 
-  // Set today's date
   const today = new Date();
   roundData.round_date = today.toISOString().split('T')[0];
   document.getElementById('date-display').value = today.toLocaleDateString('en-US', {
@@ -108,16 +97,10 @@ window.addEventListener('DOMContentLoaded', async () => {
     day: 'numeric'
   });
 
-  // Handle nail check: show weekly (only Mondays), hide other days
   handleNailCheckVisibility(today);
-
-  // Populate angel dropdown
   populateAngels();
-
-  // Populate follow-up categories
   populateFollowupCategories();
 
-  // Allow Enter key to submit passcode
   document.getElementById('passcode-input').addEventListener('keypress', (e) => {
     if (e.key === 'Enter') checkPasscode();
   });
@@ -129,25 +112,34 @@ window.addEventListener('DOMContentLoaded', async () => {
 
 async function loadFacilityData() {
   try {
-    // Load settings (passcode, admin name, etc.)
-    const { data: settings } = await supabase.from('settings').select('*');
-    const passcodeRow = settings.find(s => s.key === 'facility_passcode');
+    const { data: settings, error: settingsError } = await db.from('settings').select('*');
+    if (settingsError) {
+      console.error('Settings error:', settingsError);
+    }
+    const passcodeRow = settings ? settings.find(s => s.key === 'facility_passcode') : null;
     facilityPasscode = passcodeRow ? passcodeRow.value : 'CCC2026';
+    console.log('Loaded passcode:', facilityPasscode);
 
-    // Load angels (roles + their assigned rooms)
-    const { data: angels } = await supabase
+    const { data: angels, error: angelsError } = await db
       .from('angels')
       .select('*')
       .eq('active', true)
       .order('id');
+    if (angelsError) {
+      console.error('Angels error:', angelsError);
+    }
     angelsData = angels || [];
+    console.log('Loaded angels:', angelsData.length);
 
-    // Load routing rules for follow-ups
-    const { data: rules } = await supabase
+    const { data: rules, error: rulesError } = await db
       .from('routing_rules')
       .select('*')
       .order('display_order');
+    if (rulesError) {
+      console.error('Routing rules error:', rulesError);
+    }
     routingRules = rules || [];
+    console.log('Loaded routing rules:', routingRules.length);
   } catch (err) {
     console.error('Error loading data from Supabase:', err);
     alert('Could not connect to the database. Please refresh and try again.');
@@ -155,7 +147,7 @@ async function loadFacilityData() {
 }
 
 // ============================================
-// PASSCODE HANDLING
+// PASSCODE
 // ============================================
 
 function checkPasscode() {
@@ -163,7 +155,6 @@ function checkPasscode() {
   const errorBox = document.getElementById('passcode-error');
 
   if (input === facilityPasscode) {
-    // Save to device so they don't type it again
     localStorage.setItem('cornerstone_passcode', input);
     errorBox.classList.add('hidden');
     showApp();
@@ -183,7 +174,6 @@ function showApp() {
 // ============================================
 
 function goToStep(step) {
-  // Validate before moving forward
   if (step > currentStep) {
     if (currentStep === 1) {
       if (!roundData.angel_role || !roundData.room_number) {
@@ -199,13 +189,9 @@ function goToStep(step) {
     }
   }
 
-  // Hide current step
   document.getElementById('step-' + currentStep).classList.add('hidden');
-
-  // Show new step
   document.getElementById('step-' + step).classList.remove('hidden');
 
-  // Update progress dots
   for (let i = 1; i <= 5; i++) {
     const dot = document.getElementById('dot-' + i);
     dot.classList.remove('done', 'current');
@@ -218,15 +204,13 @@ function goToStep(step) {
 }
 
 // ============================================
-// STEP 1 - ANGEL / ROOM SELECTION
+// STEP 1 - ANGEL / ROOM
 // ============================================
 
 function populateAngels() {
   const select = document.getElementById('angel-select');
   angelsData.forEach(angel => {
-    // Skip Maintenance - they receive action items, they don't round
     if (angel.role === 'Maintenance') return;
-
     const opt = document.createElement('option');
     opt.value = angel.id;
     const person = angel.current_person ? ' — ' + angel.current_person : ' (unfilled)';
@@ -250,7 +234,6 @@ function onAngelChange() {
   roundData.angel_role = angel.role;
   roundData.angel_person = angel.current_person;
 
-  // Populate this angel's assigned rooms
   angel.assigned_rooms.forEach(room => {
     const opt = document.createElement('option');
     opt.value = room;
@@ -258,14 +241,13 @@ function onAngelChange() {
     roomSelect.appendChild(opt);
   });
 
-  // Save room selection when it changes
   roomSelect.onchange = () => {
     roundData.room_number = roomSelect.value;
   };
 }
 
 // ============================================
-// CHECKBOX / TOGGLE HANDLING
+// CHECKBOXES
 // ============================================
 
 function toggleCheck(el) {
@@ -276,7 +258,6 @@ function toggleCheck(el) {
 }
 
 function allClear(section) {
-  // "All clear" auto-checks all First Look items
   if (section === 'firstlook') {
     const step = document.getElementById('step-2');
     const items = step.querySelectorAll('.check-item:not(.all-clear)');
@@ -285,14 +266,13 @@ function allClear(section) {
       const field = item.dataset.field;
       if (field) roundData[field] = true;
     });
-    // Also mark the all-clear button
     const allClearBtn = step.querySelector('.all-clear');
     allClearBtn.classList.add('checked');
   }
 }
 
 // ============================================
-// STEP 3 - RESIDENT STATE
+// STEP 3 - RESIDENT
 // ============================================
 
 function selectState(btn, state) {
@@ -300,7 +280,6 @@ function selectState(btn, state) {
   btn.classList.add('selected');
   roundData.resident_state = state;
 
-  // Show conversation fields only if resident engaged
   const engagedFields = document.getElementById('engaged-fields');
   if (state === 'awake') {
     engagedFields.classList.remove('hidden');
@@ -318,7 +297,6 @@ function selectMood(el, mood) {
   roundData.resident_mood = mood;
 }
 
-// Handle nail check: only shown on Mondays (weekly)
 function handleNailCheckVisibility(today) {
   const isMonday = today.getDay() === 1;
   const nailsEl = document.getElementById('nails-container');
@@ -327,14 +305,13 @@ function handleNailCheckVisibility(today) {
   if (isMonday) {
     nailsLabel.textContent = 'Nails checked and OK (weekly check today)';
   } else {
-    // Not Monday — auto-mark as N/A, hide from view
     nailsEl.classList.add('hidden');
     roundData.nails_ok = 'N/A';
   }
 }
 
 // ============================================
-// STEP 5 - STAFF / FOLLOWUP / RATING
+// STEP 5 - STAFF / RATING / FOLLOWUP
 // ============================================
 
 function selectStaffSeen(btn, seen) {
@@ -388,11 +365,10 @@ function populateFollowupCategories() {
 }
 
 // ============================================
-// SUBMIT ROUND
+// SUBMIT
 // ============================================
 
 async function submitRound() {
-  // Grab all the text fields (they're not tracked in real-time like checkboxes)
   roundData.room_notes = document.getElementById('room-notes').value;
   roundData.conversation_notes = document.getElementById('conversation-notes').value;
   roundData.resident_notes = document.getElementById('resident-notes').value;
@@ -400,7 +376,6 @@ async function submitRound() {
   roundData.staff_notes = document.getElementById('staff-notes').value;
   roundData.additional_notes = document.getElementById('additional-notes').value;
 
-  // If follow-up needed, grab category + description
   if (roundData.followup_needed) {
     followupData.category = document.getElementById('followup-category').value;
     followupData.description = document.getElementById('followup-description').value;
@@ -412,8 +387,7 @@ async function submitRound() {
   }
 
   try {
-    // Insert the round
-    const { data: roundResult, error: roundError } = await supabase
+    const { data: roundResult, error: roundError } = await db
       .from('rounds')
       .insert([roundData])
       .select();
@@ -422,12 +396,10 @@ async function submitRound() {
 
     const newRoundId = roundResult[0].id;
 
-    // If follow-up flagged, create the action item
     if (roundData.followup_needed) {
       const rule = routingRules.find(r => r.category === followupData.category);
       const assignedRole = rule ? rule.routes_to_role : 'Administrator';
 
-      // Handle unfilled fallback (if the target role has no current person)
       let finalRole = assignedRole;
       const targetAngel = angelsData.find(a => a.role === assignedRole);
       if (targetAngel && !targetAngel.current_person && rule.fallback_role) {
@@ -436,7 +408,7 @@ async function submitRound() {
 
       const isUrgent = rule ? rule.urgent : false;
 
-      await supabase.from('action_items').insert([{
+      await db.from('action_items').insert([{
         round_id: newRoundId,
         room_number: roundData.room_number,
         reported_by_role: roundData.angel_role,
@@ -448,9 +420,8 @@ async function submitRound() {
       }]);
     }
 
-    // Also create urgent action items for abuse or O2 concerns (even if no follow-up flagged)
     if (roundData.abuse_concern && !roundData.followup_needed) {
-      await supabase.from('action_items').insert([{
+      await db.from('action_items').insert([{
         round_id: newRoundId,
         room_number: roundData.room_number,
         reported_by_role: roundData.angel_role,
@@ -463,7 +434,7 @@ async function submitRound() {
     }
 
     if (roundData.o2_setting_correct === false) {
-      await supabase.from('action_items').insert([{
+      await db.from('action_items').insert([{
         round_id: newRoundId,
         room_number: roundData.room_number,
         reported_by_role: roundData.angel_role,
@@ -475,7 +446,6 @@ async function submitRound() {
       }]);
     }
 
-    // Show success screen
     showSuccessScreen();
   } catch (err) {
     console.error('Submit error:', err);
@@ -484,22 +454,14 @@ async function submitRound() {
 }
 
 function showSuccessScreen() {
-  // Hide the current step
   document.getElementById('step-5').classList.add('hidden');
-  // Hide progress dots
   document.querySelector('.progress-dots').classList.add('hidden');
-  // Show success screen
   document.getElementById('success-screen').classList.remove('hidden');
   document.getElementById('success-summary').textContent =
     'Room ' + roundData.room_number + ' complete. Great work.';
 }
 
 function startNewRound() {
-  // Reset everything and go back to step 1
-  const angelId = document.getElementById('angel-select').value;
-  const angelName = document.getElementById('angel-select').selectedOptions[0].textContent;
-
-  // Reset roundData (keep angel selection, clear the rest)
   Object.keys(roundData).forEach(key => {
     if (key !== 'angel_role' && key !== 'angel_person' && key !== 'round_date') {
       roundData[key] = typeof roundData[key] === 'string' ? '' : null;
@@ -508,24 +470,18 @@ function startNewRound() {
 
   followupData = { category: null, description: '' };
 
-  // Clear all checked items
   document.querySelectorAll('.check-item.checked').forEach(el => el.classList.remove('checked'));
   document.querySelectorAll('.state-btn.selected').forEach(el => el.classList.remove('selected'));
   document.querySelectorAll('.mood-option.selected').forEach(el => el.classList.remove('selected'));
-
-  // Clear all textareas
   document.querySelectorAll('textarea').forEach(t => t.value = '');
 
-  // Reset room selection
   document.getElementById('room-select').value = '';
   roundData.room_number = null;
 
-  // Hide engaged/staff/followup fields
   document.getElementById('engaged-fields').classList.add('hidden');
   document.getElementById('staff-fields').classList.add('hidden');
   document.getElementById('followup-fields').classList.add('hidden');
 
-  // Show progress dots + step 1
   document.querySelector('.progress-dots').classList.remove('hidden');
   document.getElementById('success-screen').classList.add('hidden');
   goToStep(1);
