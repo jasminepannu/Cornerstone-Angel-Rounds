@@ -9,11 +9,7 @@
 </head>
 <body>
 
-  <!-- ============================================
-       SCREEN 1: PASSCODE GATE
-       Shows first time on each device. Once entered
-       correctly, the device remembers it forever.
-       ============================================ -->
+  <!-- PASSCODE GATE -->
   <div id="passcode-screen" class="passcode-gate">
     <div class="brand">Cornerstone</div>
     <div class="tagline">Angel Rounds</div>
@@ -27,12 +23,9 @@
     </div>
   </div>
 
-  <!-- ============================================
-       MAIN APP (hidden until passcode is entered)
-       ============================================ -->
+  <!-- MAIN APP -->
   <div id="app" class="hidden">
 
-    <!-- Header -->
     <div class="header">
       <div class="brand">Cornerstone</div>
       <div class="subtitle">Angel Rounds · <span id="today-date"></span></div>
@@ -40,7 +33,6 @@
 
     <div class="container">
 
-      <!-- Progress dots -->
       <div class="progress-dots">
         <div class="dot current" id="dot-1"></div>
         <div class="dot" id="dot-2"></div>
@@ -49,9 +41,7 @@
         <div class="dot" id="dot-5"></div>
       </div>
 
-      <!-- ============================================
-           STEP 1: WHO & WHERE
-           ============================================ -->
+      <!-- STEP 1: WHO & WHERE -->
       <div id="step-1" class="step">
         <div class="card">
           <h2>Who & Where</h2>
@@ -66,9 +56,11 @@
           <input type="text" id="date-display" readonly>
 
           <label for="room-select">Room number <span class="required">*</span></label>
-          <select id="room-select">
+          <select id="room-select" onchange="onRoomChange()">
             <option value="">Select room...</option>
           </select>
+
+          <div id="bed-count-note" style="margin-top: 12px; color: var(--text-muted); font-size: 13px;"></div>
         </div>
 
         <div class="button-row">
@@ -76,13 +68,11 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 2: FIRST LOOK (Room Scan)
-           ============================================ -->
+      <!-- STEP 2: FIRST LOOK (room-level) -->
       <div id="step-2" class="step hidden">
         <div class="card">
           <h2>First Look</h2>
-          <p class="subtitle">Scan the room before approaching the bed.</p>
+          <p class="subtitle">Scan the whole room before approaching beds.</p>
 
           <div class="section-label">Room condition</div>
 
@@ -96,9 +86,14 @@
             <span>Name on door correct</span>
           </div>
 
-          <div class="check-item" onclick="toggleCheck(this)" data-field="floor_clear">
+          <div class="check-item" onclick="toggleCheck(this)" data-field="area_clear">
             <div class="circle"></div>
-            <span>Floor clear (no trash, belongings not on floor)</span>
+            <span>Area clear — no clutter</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="nothing_under_bed">
+            <div class="circle"></div>
+            <span>Nothing under bed</span>
           </div>
 
           <div class="check-item" onclick="toggleCheck(this)" data-field="room_free_of_odor">
@@ -121,6 +116,16 @@
             <span>Bathroom clean and stocked</span>
           </div>
 
+          <div class="check-item" onclick="toggleCheck(this)" data-field="gloves_stocked">
+            <div class="circle"></div>
+            <span>Gloves stocked</span>
+          </div>
+
+          <div class="check-item" onclick="toggleCheck(this)" data-field="linens_clean">
+            <div class="circle"></div>
+            <span>Bed linens, pillows, curtains clean</span>
+          </div>
+
           <div class="check-item" onclick="toggleCheck(this)" data-field="closets_good_repair">
             <div class="circle"></div>
             <span>Closets and dressers in good repair</span>
@@ -136,82 +141,14 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 3: RESIDENT CHECK
-           ============================================ -->
+      <!-- STEP 3: RESIDENT CHECK (per-bed, repeats for each bed in room) -->
       <div id="step-3" class="step hidden">
         <div class="card">
           <h2>Resident Check</h2>
-          <p class="subtitle">Check the resident and their belongings.</p>
-
-          <label>Resident state <span class="required">*</span></label>
-          <div class="state-grid">
-            <button type="button" class="state-btn" onclick="selectState(this, 'awake')">Awake &amp; alert</button>
-            <button type="button" class="state-btn" onclick="selectState(this, 'sleeping')">Sleeping</button>
-            <button type="button" class="state-btn" onclick="selectState(this, 'away')">Away from room</button>
-            <button type="button" class="state-btn" onclick="selectState(this, 'bed_empty')">Bed empty</button>
-            <button type="button" class="state-btn" onclick="selectState(this, 'no_response')" style="grid-column: span 2;">Resident did not respond</button>
+          <p class="subtitle">Check each bed in this room individually.</p>
+          <div id="bed-cards-container">
+            <!-- Bed cards will be dynamically generated here -->
           </div>
-
-          <!-- Mood + conversation only if resident engaged -->
-          <div id="engaged-fields" class="hidden">
-            <label>How is their mood?</label>
-            <div class="mood-scale">
-              <span class="mood-option" onclick="selectMood(this, 'good')" title="Good">😊</span>
-              <span class="mood-option" onclick="selectMood(this, 'okay')" title="Okay">😐</span>
-              <span class="mood-option" onclick="selectMood(this, 'concerning')" title="Concerning">😟</span>
-            </div>
-
-            <label for="conversation-notes">Conversation notes</label>
-            <textarea id="conversation-notes" placeholder="What did the resident share? Any concerns?"></textarea>
-
-            <div class="check-item" onclick="toggleCheck(this)" data-field="offered_help">
-              <div class="circle"></div>
-              <span>I asked if I could help them with anything</span>
-            </div>
-          </div>
-
-          <div class="section-label">Resident appearance</div>
-
-          <div class="check-item" onclick="toggleCheck(this)" data-field="appearance_clean">
-            <div class="circle"></div>
-            <span>Clean — no crumbs or stains</span>
-          </div>
-
-          <div class="check-item" onclick="toggleCheck(this)" data-field="grooming_ok">
-            <div class="circle"></div>
-            <span>Grooming looks good</span>
-          </div>
-
-          <div class="check-item" onclick="toggleCheck(this)" data-field="pillow_comfortable">
-            <div class="circle"></div>
-            <span>Pillow looks comfortable</span>
-          </div>
-
-          <div id="nails-container" class="check-item" onclick="toggleCheck(this)" data-field="nails_ok">
-            <div class="circle"></div>
-            <span id="nails-label">Nails checked and OK</span>
-          </div>
-
-          <div class="section-label">Concerns</div>
-
-          <div class="check-item" onclick="toggleCheck(this)" data-field="pain_observed">
-            <div class="circle"></div>
-            <span>⚠️ Signs of pain observed</span>
-          </div>
-
-          <div class="check-item" onclick="toggleCheck(this)" data-field="linens_clean">
-            <div class="circle"></div>
-            <span>Bed linens, pillows, curtains free of stains</span>
-          </div>
-
-          <div class="check-item" onclick="toggleCheck(this)" data-field="abuse_concern">
-            <div class="circle"></div>
-            <span>🚨 Possible abuse indicator</span>
-          </div>
-
-          <label for="resident-notes">Additional resident notes</label>
-          <textarea id="resident-notes" placeholder="Anything else to note about the resident..."></textarea>
         </div>
 
         <div class="button-row">
@@ -220,13 +157,11 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 4: SAFETY & SUPPLIES
-           ============================================ -->
+      <!-- STEP 4: SAFETY & SUPPLIES (room-level) -->
       <div id="step-4" class="step hidden">
         <div class="card">
           <h2>Safety &amp; Supplies</h2>
-          <p class="subtitle">Check reach, labeling, equipment.</p>
+          <p class="subtitle">Room-level check for reach, labeling, equipment.</p>
 
           <div class="section-label">Within reach</div>
 
@@ -242,7 +177,7 @@
 
           <div class="check-item" onclick="toggleCheck(this)" data-field="water_pitcher_ok">
             <div class="circle"></div>
-            <span>Water pitcher clean and filled</span>
+            <span>Water pitcher clean and filled (unless fluid restriction)</span>
           </div>
 
           <div class="check-item" onclick="toggleCheck(this)" data-field="tv_remote_reach">
@@ -306,9 +241,7 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 5: STAFF CHECK-IN + WRAP-UP
-           ============================================ -->
+      <!-- STEP 5: STAFF + WRAP-UP -->
       <div id="step-5" class="step hidden">
         <div class="card">
           <h2>Staff Check-in</h2>
@@ -365,7 +298,7 @@
             </select>
 
             <label for="followup-description">Describe the follow-up</label>
-            <textarea id="followup-description" placeholder="What needs to be done? Which room? Any details..."></textarea>
+            <textarea id="followup-description" placeholder="What needs to be done? Which bed? Any details..."></textarea>
           </div>
 
           <label for="additional-notes">Additional notes</label>
@@ -378,9 +311,7 @@
         </div>
       </div>
 
-      <!-- ============================================
-           SUCCESS SCREEN (after submit)
-           ============================================ -->
+      <!-- SUCCESS SCREEN -->
       <div id="success-screen" class="hidden">
         <div class="success-check">
           <div class="icon">✓</div>
@@ -395,9 +326,7 @@
     </div>
   </div>
 
-  <!-- Supabase library - lets our app talk to the database -->
   <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
-  <!-- Our app code -->
   <script src="app.js"></script>
 </body>
 </html>
