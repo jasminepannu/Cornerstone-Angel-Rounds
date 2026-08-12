@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#5B2C87">
+  <title>Cornerstone Angel Rounds — Admin Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <style>
+    /* Dashboard-specific styles */
+    .dash-container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 20px 16px 40px;
+    }
+
+    .dash-header {
+      background: var(--white);
+      border-bottom: 1px solid var(--border);
+      padding: 20px 24px;
+    }
+
+    .dash-header .brand {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--purple);
+      letter-spacing: -0.3px;
+    }
+
+    .dash-header .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    .dash-header .header-inner {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .refresh-btn {
+      background: var(--white);
+      color: var(--text);
+      border: 1px solid var(--border-strong);
+      padding: 8px 14px;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .refresh-btn:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    .stat-grid-dash {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 12px;
+      margin-bottom: 20px;
+    }
+
+    .rounds-table {
+      width: 100%;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      overflow: hidden;
+      border-collapse: collapse;
+    }
+
+    .rounds-table th {
+      background: var(--bg);
+      padding: 12px 14px;
+      text-align: left;
+      font-size: 11px;
+      font-weight: 600;
+      color: var(--text-muted);
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .rounds-table td {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      font-size: 14px;
+      color: var(--text);
+    }
+
+    .rounds-table tr:last-child td {
+      border-bottom: none;
+    }
+
+    .rounds-table .compliance-good {
+      color: var(--green);
+      font-weight: 600;
+    }
+
+    .rounds-table .compliance-partial {
+      color: var(--orange);
+      font-weight: 600;
+    }
+
+    .rounds-table .compliance-missing {
+      color: var(--red);
+      font-weight: 600;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+
+    .action-item-row {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--orange);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+    }
+
+    .action-item-row.urgent {
+      border-left-color: var(--red);
+      background: var(--bg-danger);
+    }
+
+    .action-item-row.closed {
+      opacity: 0.5;
+      border-left-color: var(--green);
+      background: var(--bg-success);
+    }
+
+    .action-details {
+      flex: 1;
+    }
+
+    .action-title {
+      font-weight: 500;
+      color: var(--text);
+      font-size: 14px;
+      margin-bottom: 6px;
+    }
+
+    .action-meta {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    .action-meta strong {
+      color: var(--text);
+    }
+
+    .action-buttons {
+      display: flex;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .btn-small {
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      border: 1px solid var(--border-strong);
+      background: var(--white);
+      cursor: pointer;
+      color: var(--text);
+    }
+
+    .btn-small:hover {
+      border-color: var(--purple);
+      color: var(--purple);
+    }
+
+    .btn-close {
+      background: var(--green);
+      color: white;
+      border-color: var(--green);
+    }
+
+    .btn-close:hover {
+      background: #047857;
+      color: white;
+    }
+
+    .urgent-tag {
+      display: inline-block;
+      background: var(--red);
+      color: white;
+      font-size: 10px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 4px;
+      margin-left: 8px;
+      letter-spacing: 0.5px;
+    }
+
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 8px 14px;
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 13px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+
+    .filter-btn.active {
+      background: var(--purple);
+      color: white;
+      border-color: var(--purple);
+    }
+
+    .last-updated {
+      font-size: 12px;
+      color: var(--text-soft);
+      margin-top: 20px;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Passcode gate (same as angel app) -->
+  <div id="passcode-screen" class="passcode-gate">
+    <div class="brand">Cornerstone</div>
+    <div class="tagline">Admin Dashboard</div>
+    <label for="passcode-input">Enter facility passcode</label>
+    <input type="password" id="passcode-input" placeholder="Passcode" autocomplete="off">
+    <div id="passcode-error" class="urgent-banner hidden" style="margin-top: 12px;">
+      Incorrect passcode. Try again.
+    </div>
+    <div class="button-row" style="margin-top: 20px;">
+      <button class="btn-primary" onclick="checkPasscode()">Continue</button>
+    </div>
+  </div>
+
+  <!-- MAIN DASHBOARD -->
+  <div id="dashboard" class="hidden">
+
+    <div class="dash-header">
+      <div class="header-inner">
+        <div>
+          <div class="brand">Cornerstone Angel Rounds</div>
+          <div class="subtitle">Admin Dashboard · <span id="today-date"></span></div>
+        </div>
+        <button class="refresh-btn" onclick="loadDashboard()">↻ Refresh</button>
+      </div>
+    </div>
+
+    <div class="dash-container">
+
+      <!-- Tabs -->
+      <div class="tabs">
+        <button class="tab active" onclick="switchTab(this, 'board')">Board</button>
+        <button class="tab" onclick="switchTab(this, 'actions')">Action Items <span id="actions-count-badge"></span></button>
+        <button class="tab" onclick="switchTab(this, 'rounds')">Recent Rounds</button>
+      </div>
+
+      <!-- ============ BOARD TAB ============ -->
+      <div id="tab-board">
+
+        <!-- Stat cards -->
+        <div class="stat-grid-dash">
+          <div class="stat-card" id="stat-angels">
+            <div class="stat-number">--</div>
+            <div class="stat-label">Angels Done</div>
+            <div class="stat-sublabel">of 14 total</div>
+          </div>
+          <div class="stat-card" id="stat-rooms">
+            <div class="stat-number">--</div>
+            <div class="stat-label">Rooms Rounded</div>
+            <div class="stat-sublabel">of 41 total</div>
+          </div>
+          <div class="stat-card" id="stat-beds">
+            <div class="stat-number">--</div>
+            <div class="stat-label">Beds Checked</div>
+            <div class="stat-sublabel">of 99 total</div>
+          </div>
+          <div class="stat-card" id="stat-open">
+            <div class="stat-number">--</div>
+            <div class="stat-label">Open Actions</div>
+            <div class="stat-sublabel" id="stat-urgent-sub">Urgent: --</div>
+          </div>
+        </div>
+
+        <!-- Missing angels banner -->
+        <div id="missing-banner" class="missing-banner hidden">
+          <strong>[!] Angels not yet rounded today</strong>
+          <div class="names" id="missing-names"></div>
+        </div>
+
+        <!-- Angel-by-angel compliance table -->
+        <h3 style="margin: 20px 0 10px; font-size: 15px; color: var(--text);">Today's rounding status by angel</h3>
+        <table class="rounds-table">
+          <thead>
+            <tr>
+              <th>Angel</th>
+              <th>Assigned rooms</th>
+              <th>Rounded</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="angel-compliance-body">
+            <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+          </tbody>
+        </table>
+
+        <div class="last-updated" id="last-updated"></div>
+      </div>
+
+      <!-- ============ ACTION ITEMS TAB ============ -->
+      <div id="tab-actions" class="hidden">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterActions(this, 'open')">Open</button>
+          <button class="filter-btn" onclick="filterActions(this, 'urgent')">Urgent only</button>
+          <button class="filter-btn" onclick="filterActions(this, 'closed')">Closed</button>
+          <button class="filter-btn" onclick="filterActions(this, 'all')">All</button>
+        </div>
+        <div id="action-items-list">
+          <div class="empty-state">Loading...</div>
+        </div>
+      </div>
+
+      <!-- ============ RECENT ROUNDS TAB ============ -->
+      <div id="tab-rounds" class="hidden">
+        <div class="filter-bar">
+          <button class="filter-btn active" onclick="filterRounds(this, 'today')">Today</button>
+          <button class="filter-btn" onclick="filterRounds(this, 'week')">This week</button>
+          <button class="filter-btn" onclick="filterRounds(this, 'all')">All time</button>
+        </div>
+        <table class="rounds-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Angel</th>
+              <th>Room</th>
+              <th>Beds</th>
+              <th>Rating</th>
+              <th>Follow-up</th>
+            </tr>
+          </thead>
+          <tbody id="rounds-list-body">
+            <tr><td colspan="6" class="empty-state">Loading...</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>
