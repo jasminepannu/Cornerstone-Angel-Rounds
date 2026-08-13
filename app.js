@@ -1,5 +1,5 @@
 // ============================================================
-// CORNERSTONE ANGEL ROUNDS — LEAN v2 BRAIN
+// CORNERSTONE ANGEL ROUNDS — LEAN v2 (clean rebuild)
 // ============================================================
 
 const SUPABASE_URL = 'https://qrvmlfkgpuqsogijlpoe.supabase.co';
@@ -44,27 +44,27 @@ const HYGIENE_CONCERNS = [
 ];
 
 const FIRSTLOOK_QUESTIONS = [
-  { field: 'names_on_door_accurate', text: 'All resident names on the room door are accurate.' },
-  { field: 'walking_paths_clear', text: 'Walking paths are clear and free of trip hazards.' },
-  { field: 'room_no_odor', text: 'Room is free of strong or unpleasant odor.' },
-  { field: 'room_temperature_ok', text: 'Room temperature appears comfortable.' },
-  { field: 'walls_surfaces_ok', text: 'Walls, doors and surfaces are free of significant damage.' },
-  { field: 'floors_clean_dry', text: 'Floors appear clean, dry and not sticky.' },
-  { field: 'no_exposed_linens', text: 'No unnecessary linens left exposed in the room.' },
-  { field: 'gloves_stocked_v2', text: 'Gloves are stocked.' }
+  { field: 'names_on_door_accurate', text: 'All resident names on the room door are accurate.', tip: 'Alert Admissions and Housekeeping.' },
+  { field: 'walking_paths_clear', text: 'Walking paths are clear and free of trip hazards.', tip: 'Clear the path if you can, or note the obstacle.' },
+  { field: 'room_no_odor', text: 'Room is free of strong or unpleasant odor.', tip: 'Alert Housekeeping if it persists.' },
+  { field: 'room_temperature_ok', text: 'Room temperature appears comfortable.', tip: 'Alert Maintenance.' },
+  { field: 'walls_surfaces_ok', text: 'Walls, doors and surfaces are free of significant damage.', tip: 'Alert Maintenance.' },
+  { field: 'floors_clean_dry', text: 'Floors appear clean, dry and not sticky.', tip: 'Alert Housekeeping.' },
+  { field: 'no_exposed_linens', text: 'No unnecessary linens left exposed in the room.', tip: 'Put linens in cart.' },
+  { field: 'gloves_stocked_v2', text: 'Gloves are stocked.', tip: 'Restock from central supply.' }
 ];
 
 const BATHROOM_QUESTIONS = [
-  { field: 'bathroom_floor_clean', text: 'Bathroom floor is clean, dry and not sticky.' },
-  { field: 'bathroom_no_odor', text: 'Bathroom is free of strong odor.' },
-  { field: 'bathroom_no_products_left', text: 'No products left behind (personal hygiene items, urinals, bedpans, linens).' }
+  { field: 'bathroom_floor_clean', text: 'Bathroom floor is clean, dry and not sticky.', tip: 'Alert Housekeeping.' },
+  { field: 'bathroom_no_odor', text: 'Bathroom is free of strong odor.', tip: 'Alert Housekeeping.' },
+  { field: 'bathroom_no_products_left', text: 'No products left behind (personal hygiene items, urinals, bedpans, linens).', tip: 'Alert CNA.' }
 ];
 
 const BED_ENV_QUESTIONS = [
-  { field: 'call_light_ok', text: 'Call light is within reach and functional.' },
-  { field: 'water_available', text: 'Water is available and within reach (unless on fluid restrictions).' },
-  { field: 'bed_safe_and_clear', text: 'Bed is stable, brakes locked, area under bed is clear.' },
-  { field: 'bedside_organized', text: 'Bedside table and hygiene items organized (toothbrush + paste together, oral care together, hair care separate).' }
+  { field: 'call_light_ok', text: 'Call light is within reach and functional.', tip: 'Move it close to the resident. If not working, call Maintenance.' },
+  { field: 'water_available', text: 'Water is available and within reach (unless on fluid restrictions).', tip: 'Move it within reach unless on fluid restriction.' },
+  { field: 'bed_safe_and_clear', text: 'Bed is stable, brakes locked, area under bed is clear.', tip: 'Lock brakes and clear the area.' },
+  { field: 'bedside_organized', text: 'Bedside table and hygiene items organized (toothbrush + paste together, oral care together, hair care separate).', tip: 'Take a moment to tidy the bedside or alert CNA.' }
 ];
 
 let roundData = {};
@@ -328,30 +328,13 @@ function goToStep(step) {
 }
 
 // ============================================
-// BUILDING FIRST LOOK & BATHROOM
+// THREE-STATE QUESTION BUILDER
 // ============================================
 
-function buildFirstLookQuestions() {
-  const container = document.getElementById('firstlook-questions');
-  if (container.children.length > 0) return;
-  container.innerHTML = FIRSTLOOK_QUESTIONS.map(q =>
-    buildThreeStateHTML(q.field, q.text, 'firstlook')
-  ).join('');
-  attachThreeStateHandlers(container, 'firstlook');
-}
-
-function buildBathroomQuestions() {
-  const container = document.getElementById('bathroom-questions');
-  if (container.children.length > 0) return;
-  container.innerHTML = BATHROOM_QUESTIONS.map(q =>
-    buildThreeStateHTML(q.field, q.text, 'bathroom')
-  ).join('');
-  attachThreeStateHandlers(container, 'bathroom');
-}
-
-function buildThreeStateHTML(field, text, section, bedIdx) {
+function buildThreeStateHTML(field, text, section, bedIdx, tip) {
   const bedAttr = bedIdx !== undefined ? ' data-bed-idx="' + bedIdx + '"' : '';
-  return '<div class="three-state" data-field="' + field + '" data-section="' + section + '"' + bedAttr + ' style="padding: 14px 0; border-bottom: 1px solid var(--border);">' +
+  const tipAttr = tip ? ' data-tip="' + tip.replace(/"/g, '&quot;') + '"' : '';
+  return '<div class="three-state" data-field="' + field + '" data-section="' + section + '"' + bedAttr + tipAttr + ' style="padding: 14px 0; border-bottom: 1px solid var(--border);">' +
     '<div class="q-text" style="font-size: 14px; color: var(--text); line-height: 1.4;">' + text + '</div>' +
     '<div class="q-buttons" style="display: flex; gap: 6px; margin-top: 10px;">' +
       '<button type="button" class="ts-btn ts-meets" style="flex: 1; padding: 10px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-muted);">✓ Meets</button>' +
@@ -362,13 +345,32 @@ function buildThreeStateHTML(field, text, section, bedIdx) {
   '</div>';
 }
 
-function attachThreeStateHandlers(container, section) {
+function attachThreeStateHandlers(container) {
   container.querySelectorAll('.three-state').forEach(q => {
     const buttons = q.querySelectorAll('.ts-btn');
+    if (buttons[0].onclick) return; // already attached
     buttons[0].onclick = () => selectThreeState(q, 'Meets Standard', buttons[0]);
     buttons[1].onclick = () => selectThreeState(q, 'Needs Attention', buttons[1]);
     buttons[2].onclick = () => selectThreeState(q, 'N/A', buttons[2]);
   });
+}
+
+function buildFirstLookQuestions() {
+  const container = document.getElementById('firstlook-questions');
+  if (container.children.length > 0) return;
+  container.innerHTML = FIRSTLOOK_QUESTIONS.map(q =>
+    buildThreeStateHTML(q.field, q.text, 'firstlook', undefined, q.tip)
+  ).join('');
+  attachThreeStateHandlers(container);
+}
+
+function buildBathroomQuestions() {
+  const container = document.getElementById('bathroom-questions');
+  if (container.children.length > 0) return;
+  container.innerHTML = BATHROOM_QUESTIONS.map(q =>
+    buildThreeStateHTML(q.field, q.text, 'bathroom', undefined, q.tip)
+  ).join('');
+  attachThreeStateHandlers(container);
 }
 
 function selectThreeState(qEl, value, btnEl) {
@@ -405,20 +407,19 @@ function selectThreeState(qEl, value, btnEl) {
     btnEl.style.borderColor = 'var(--border-strong)';
   }
 
-  // Show/hide follow-up
   const followup = qEl.querySelector('.q-followup');
   if (value === 'Needs Attention') {
     if (followup.innerHTML === '') {
       const bedIdxAttr = bedIdx || '';
+      const tipText = qEl.dataset.tip || 'Let a CNA or Nurse know so they can respond.';
       followup.innerHTML =
         '<div style="margin-top: 10px; padding: 10px 12px; background: var(--bg-warning); border-radius: 6px; border-left: 3px solid var(--orange);">' +
-          '<div style="font-size: 12px; color: var(--orange); font-weight: 600; margin-bottom: 6px;">💡 Let a CNA or Nurse know so they can respond.</div>' +
+          '<div style="font-size: 12px; color: var(--orange); font-weight: 600; margin-bottom: 6px;">💡 ' + tipText + '</div>' +
           '<textarea placeholder="What did you observe?" style="min-height: 60px; font-size: 14px; margin: 0;" oninput="saveFollowupNote(this, \'' + field + '\', \'' + bedIdxAttr + '\')"></textarea>' +
         '</div>';
     }
     followup.classList.remove('hidden');
 
-    // Show hygiene concerns if this is the hygiene question
     if (field === 'resident_clean_groomed' && bedIdx !== undefined) {
       const idx = parseInt(bedIdx);
       const concernsContainer = document.getElementById('hygiene-concerns-' + idx);
@@ -433,7 +434,6 @@ function selectThreeState(qEl, value, btnEl) {
     }
   }
 
-  // If Needs Attention, un-mark "mark all clear"
   if (value === 'Needs Attention' && section && section !== 'bed') {
     const btn = document.getElementById('markall-' + section);
     if (btn && btn.dataset.markedAll === 'true') {
@@ -656,24 +656,21 @@ function showBedContent(idx) {
   html += '<button type="button" class="state-btn" data-state="no_response" onclick="selectBedState(' + idx + ', this, \'no_response\')" style="grid-column: span 2;">Resident does not respond</button>';
   html += '</div>';
 
-  // Empty bed: just ask if ready for new admission
   html += '<div id="bed-empty-' + idx + '" class="hidden">';
   html += '<div class="section-label" style="margin-top: 20px;">Empty bed check</div>';
-  html += buildThreeStateHTML('bed_ready_for_admission', 'Bed appears ready for a new admission.', 'bed', idx);
+  html += buildThreeStateHTML('bed_ready_for_admission', 'Bed appears ready for a new admission.', 'bed', idx, 'Alert Admissions and Housekeeping.');
   html += '</div>';
 
-  // Full bed check (sleeping / awake / no_response)
   html += '<div id="bed-details-' + idx + '" class="hidden">';
 
   html += '<div class="section-label">Bedside environment</div>';
   BED_ENV_QUESTIONS.forEach(q => {
-    html += buildThreeStateHTML(q.field, q.text, 'bed', idx);
+    html += buildThreeStateHTML(q.field, q.text, 'bed', idx, q.tip);
   });
 
   html += '<div class="section-label">Resident appearance</div>';
-  html += buildThreeStateHTML('resident_clean_groomed', 'Resident appears clean and well-groomed for the time of day.', 'bed', idx);
+  html += buildThreeStateHTML('resident_clean_groomed', 'Resident appears clean and well-groomed for the time of day.', 'bed', idx, 'Alert the CNA and Charge Nurse so they can respond.');
 
-  // Hygiene concerns checklist (hidden until Needs Attention)
   html += '<div id="hygiene-concerns-' + idx + '" class="hidden" style="margin: 10px 0; padding: 12px; background: var(--bg-warning); border-radius: 6px;">';
   html += '<div style="font-size: 13px; color: var(--orange); font-weight: 600; margin-bottom: 8px;">Which concerns? (tap all that apply)</div>';
   html += '<div style="display: flex; flex-wrap: wrap; gap: 6px;">';
@@ -694,30 +691,29 @@ function showBedContent(idx) {
 
   html += '<div id="eq-oxygen-' + idx + '" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">';
   html += '<div class="section-label" style="margin-top: 0;">Oxygen</div>';
-  html += buildThreeStateHTML('o2_tubing_no_kinks', 'Oxygen tubing without obvious kinks.', 'bed', idx);
-  html += buildThreeStateHTML('o2_tubing_off_floor', 'Oxygen tubing kept off the floor.', 'bed', idx);
-  html += buildThreeStateHTML('o2_tubing_dated_7_days', 'Tubing and bag dated within 7 days.', 'bed', idx);
-  html += buildThreeStateHTML('o2_no_smoking_sign', 'NO SMOKING / O2 safety sign present.', 'bed', idx);
+  html += buildThreeStateHTML('o2_tubing_no_kinks', 'Oxygen tubing without obvious kinks.', 'bed', idx, 'Notify Respiratory right away.');
+  html += buildThreeStateHTML('o2_tubing_off_floor', 'Oxygen tubing kept off the floor.', 'bed', idx, 'Notify Respiratory right away.');
+  html += buildThreeStateHTML('o2_tubing_dated_7_days', 'Tubing and bag dated within 7 days.', 'bed', idx, 'Notify Respiratory right away.');
+  html += buildThreeStateHTML('o2_no_smoking_sign', 'NO SMOKING / O2 safety sign present.', 'bed', idx, 'Notify Respiratory right away.');
   html += '</div>';
 
   html += '<div id="eq-catheter-' + idx + '" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">';
   html += '<div class="section-label" style="margin-top: 0;">Catheter</div>';
-  html += buildThreeStateHTML('cath_bag_dignity_cover', 'Catheter bag covered with dignity/privacy bag.', 'bed', idx);
-  html += buildThreeStateHTML('cath_bag_off_floor', 'Catheter bag not touching the floor.', 'bed', idx);
-  html += buildThreeStateHTML('cath_tubing_no_kinks', 'Tubing without obvious kinks.', 'bed', idx);
-  html += buildThreeStateHTML('cath_tubing_not_trapped', 'Tubing not trapped under resident leg or body.', 'bed', idx);
-  html += buildThreeStateHTML('cath_tubing_clean', 'Tubing not visibly soiled or discolored.', 'bed', idx);
+  html += buildThreeStateHTML('cath_bag_dignity_cover', 'Catheter bag covered with dignity/privacy bag.', 'bed', idx, 'Notify Nursing right away.');
+  html += buildThreeStateHTML('cath_bag_off_floor', 'Catheter bag not touching the floor.', 'bed', idx, 'Notify Nursing right away.');
+  html += buildThreeStateHTML('cath_tubing_no_kinks', 'Tubing without obvious kinks.', 'bed', idx, 'Notify Nursing right away.');
+  html += buildThreeStateHTML('cath_tubing_not_trapped', 'Tubing not trapped under resident leg or body.', 'bed', idx, 'Notify Nursing right away.');
+  html += buildThreeStateHTML('cath_tubing_clean', 'Tubing not visibly soiled or discolored.', 'bed', idx, 'Notify Nursing right away.');
   html += '</div>';
 
   html += '<div id="eq-fall_mat-' + idx + '" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">';
   html += '<div class="section-label" style="margin-top: 0;">Fall / Floor Mat</div>';
-  html += buildThreeStateHTML('mat_clear_of_furniture', 'Mat is clear of furniture.', 'bed', idx);
-  html += buildThreeStateHTML('mat_clean_no_stains', 'Mat is clean and free of stains.', 'bed', idx);
-  html += buildThreeStateHTML('mat_not_ripped', 'Mat is not ripped.', 'bed', idx);
-  html += buildThreeStateHTML('mat_positioned_ok', 'Mat is positioned appropriately.', 'bed', idx);
+  html += buildThreeStateHTML('mat_clear_of_furniture', 'Mat is clear of furniture.', 'bed', idx, 'Move furniture off the mat.');
+  html += buildThreeStateHTML('mat_clean_no_stains', 'Mat is clean and free of stains.', 'bed', idx, 'Alert Nursing and Maintenance.');
+  html += buildThreeStateHTML('mat_not_ripped', 'Mat is not ripped.', 'bed', idx, 'Alert Nursing and Maintenance.');
+  html += buildThreeStateHTML('mat_positioned_ok', 'Mat is positioned appropriately.', 'bed', idx, 'Alert Nursing and Maintenance.');
   html += '</div>';
 
-  // Conversation (only if awake)
   html += '<div id="conversation-' + idx + '" class="hidden">';
   html += '<div class="section-label">Resident conversation</div>';
   html += '<label>Did you speak with the resident?</label>';
@@ -751,10 +747,8 @@ function showBedContent(idx) {
 
   container.innerHTML = html;
 
-  // Attach three-state handlers to the newly built content
-  attachThreeStateHandlers(container, 'bed');
+  attachThreeStateHandlers(container);
 
-  // Restore state
   if (bed.resident_state) {
     const stateBtn = container.querySelector('[data-state="' + bed.resident_state + '"]');
     if (stateBtn) selectBedState(idx, stateBtn, bed.resident_state);
@@ -767,7 +761,6 @@ function showBedContent(idx) {
 function restoreBedAnswers(idx) {
   const bed = bedData[idx];
 
-  // Restore three-state answers
   document.querySelectorAll('.three-state[data-bed-idx="' + idx + '"]').forEach(q => {
     const field = q.dataset.field;
     const value = bed[field];
@@ -777,7 +770,6 @@ function restoreBedAnswers(idx) {
     if (btn) selectThreeState(q, value, btn);
   });
 
-  // Restore equipment
   ['oxygen', 'catheter', 'fall_mat'].forEach(eq => {
     if (bed['has_' + eq]) {
       const btn = document.querySelector('#bed-content-container [data-eq="' + eq + '"]');
@@ -785,7 +777,6 @@ function restoreBedAnswers(idx) {
     }
   });
 
-  // Restore hygiene concerns
   if (bed.hygiene_concerns) {
     bed.hygiene_concerns.split(',').filter(Boolean).forEach(key => {
       const chip = document.querySelector('.hyg-chip-' + idx + '[data-key="' + key + '"]');
@@ -793,7 +784,6 @@ function restoreBedAnswers(idx) {
     });
   }
 
-  // Restore conversation concerns
   if (bed.concerns_mentioned) {
     bed.concerns_mentioned.split(',').filter(Boolean).forEach(key => {
       const chip = document.querySelector('.concern-chip-' + idx + '[data-key="' + key + '"]');
@@ -815,16 +805,14 @@ function selectBedState(idx, btn, state) {
   const details = document.getElementById('bed-details-' + idx);
   const conversation = document.getElementById('conversation-' + idx);
 
-  // Hide everything first
   empty.classList.add('hidden');
   details.classList.add('hidden');
 
   if (state === 'empty_bed') {
     empty.classList.remove('hidden');
   } else if (state === 'away') {
-    // Away: nothing to check
+    // nothing
   } else {
-    // Awake / sleeping / no_response: show full bed check
     details.classList.remove('hidden');
     if (state === 'awake') {
       conversation.classList.remove('hidden');
@@ -1043,18 +1031,15 @@ async function submitRound() {
     }
   }
 
-  // Build a whitelist of columns that exist in the rounds table (lean v2 only)
   const allowedFields = [
     'angel_role', 'angel_person', 'room_number', 'round_date', 'round_status',
     'names_on_door_accurate', 'walking_paths_clear', 'room_no_odor',
     'room_temperature_ok', 'walls_surfaces_ok', 'floors_clean_dry',
-    'no_exposed_linens', 'curtains_clean_intact', 'bed_linens_pillows_clean',
-    'furniture_good_repair', 'gloves_stocked_v2',
+    'no_exposed_linens', 'gloves_stocked_v2',
     'bathroom_floor_clean', 'bathroom_no_odor', 'bathroom_no_products_left',
     'names_on_door_accurate_note', 'walking_paths_clear_note', 'room_no_odor_note',
     'room_temperature_ok_note', 'walls_surfaces_ok_note', 'floors_clean_dry_note',
-    'no_exposed_linens_note', 'curtains_clean_intact_note', 'bed_linens_pillows_clean_note',
-    'furniture_good_repair_note', 'gloves_stocked_v2_note',
+    'no_exposed_linens_note', 'gloves_stocked_v2_note',
     'bathroom_floor_clean_note', 'bathroom_no_odor_note', 'bathroom_no_products_left_note',
     'room_notes', 'bathroom_notes', 'staff_seen', 'staff_name_badge',
     'staff_acknowledged', 'staff_notes', 'overall_rating',
@@ -1072,7 +1057,6 @@ async function submitRound() {
     const newRoundId = roundResult[0].id;
 
     if (bedData.length > 0) {
-      // Whitelist for round_beds
       const bedFields = [
         'bed_code', 'resident_state', 'bed_ready_for_admission',
         'call_light_ok', 'water_available', 'bed_safe_and_clear', 'bedside_organized',
@@ -1102,10 +1086,8 @@ async function submitRound() {
       if (bedError) throw bedError;
     }
 
-    // Auto-create action items from Needs Attention
     await createActionItemsFromNeedsAttention(newRoundId);
 
-    // User-declared follow-up
     if (roundData.followup_needed) {
       const rule = routingRules.find(r => r.category === followupData.category);
       const assignedRole = rule ? rule.routes_to_role : 'Administrator';
@@ -1178,9 +1160,9 @@ async function createActionItemsFromNeedsAttention(roundId) {
 }
 
 function guessDepartment(field) {
-  if (/bathroom|floor|odor|linen|curtain|clean|walls|exposed/i.test(field)) return 'Housekeeping';
-  if (/bed|furniture|closet|dresser|call_light|walls|mat|repair/i.test(field)) return 'Maintenance';
-  if (/oxygen|o2|catheter|pain|wound|enteral|hygiene|clean_groomed/i.test(field)) return 'DON';
+  if (/bathroom|floor|odor|linen|clean|walls|exposed/i.test(field)) return 'Housekeeping';
+  if (/bed|call_light|walls|mat|repair/i.test(field)) return 'Maintenance';
+  if (/oxygen|o2|catheter|hygiene|clean_groomed/i.test(field)) return 'DON';
   if (/water|food|gloves/i.test(field)) return 'Dietary';
   if (/name_on_door|admission/i.test(field)) return 'Admissions Director';
   return 'Administrator';
@@ -1208,8 +1190,7 @@ function resetRoundData() {
     round_status: 'submitted',
     names_on_door_accurate: null, walking_paths_clear: null, room_no_odor: null,
     room_temperature_ok: null, walls_surfaces_ok: null, floors_clean_dry: null,
-    no_exposed_linens: null, curtains_clean_intact: null, bed_linens_pillows_clean: null,
-    furniture_good_repair: null, gloves_stocked_v2: null,
+    no_exposed_linens: null, gloves_stocked_v2: null,
     bathroom_floor_clean: null, bathroom_no_odor: null, bathroom_no_products_left: null,
     room_notes: '', bathroom_notes: '',
     staff_seen: null, staff_name_badge: null, staff_acknowledged: null, staff_notes: '',
@@ -1220,7 +1201,6 @@ function resetRoundData() {
   currentStep = 1;
   currentBedTab = 0;
 
-  // Clear built questions so they rebuild fresh
   const fl = document.getElementById('firstlook-questions');
   if (fl) fl.innerHTML = '';
   const bath = document.getElementById('bathroom-questions');
