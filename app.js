@@ -1,5 +1,5 @@
 // ============================================================
-// CORNERSTONE ANGEL ROUNDS — V2 BRAIN
+// CORNERSTONE ANGEL ROUNDS — V2 BRAIN (fixed apostrophes)
 // ============================================================
 
 const SUPABASE_URL = 'https://qrvmlfkgpuqsogijlpoe.supabase.co';
@@ -22,7 +22,6 @@ let currentStep = 1;
 let currentAngel = null;
 let currentBedTab = 0;
 
-// The concerns list (Wave 3 addition)
 const CONCERNS_LIST = [
   { key: 'meals', label: 'Meal timeliness or quality' },
   { key: 'pain', label: 'Pain / discomfort' },
@@ -36,11 +35,8 @@ const CONCERNS_LIST = [
   { key: 'other', label: 'Something else' }
 ];
 
-// Room-level round data
 let roundData = {};
-// Per-bed data
 let bedData = [];
-// Room-level meta
 let followupData = { category: null, description: '' };
 
 // ============================================
@@ -80,11 +76,9 @@ async function loadFacilityData() {
     const { data: rules } = await db.from('routing_rules').select('*').order('display_order');
     routingRules = rules || [];
 
-    // Load open action items (for surfacing unresolved items per room)
     const { data: actions } = await db.from('action_items').select('*').eq('status', 'open');
     recentActionItems = actions || [];
 
-    // Load weekly checks from the last 7 days
     const sevenDaysAgo = new Date();
     sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
     const { data: weekly } = await db.from('weekly_checks').select('*').gte('checked_at', sevenDaysAgo.toISOString());
@@ -139,7 +133,6 @@ function showHomeScreen() {
     }
   }
 
-  // No remembered angel — show picker
   renderHomeNotRecognized();
 }
 
@@ -147,7 +140,7 @@ function renderHomeNotRecognized() {
   document.getElementById('home-not-recognized').classList.remove('hidden');
   document.getElementById('home-recognized').classList.add('hidden');
   document.getElementById('home-greeting').textContent = 'Welcome';
-  document.getElementById('home-subtitle').textContent = "Pick your role to get started.";
+  document.getElementById('home-subtitle').textContent = 'Pick your role to get started.';
 
   const select = document.getElementById('home-angel-select');
   select.innerHTML = '<option value="">Select your role...</option>';
@@ -185,10 +178,9 @@ async function renderHomeRecognized(angel) {
   const firstName = (angel.current_person || angel.role).split(' ')[0];
   const hour = new Date().getHours();
   const timeGreeting = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
-  document.getElementById('home-greeting').textContent = `${timeGreeting}, ${firstName}!`;
-  document.getElementById('home-subtitle').textContent = `${angel.role} · Today's rounds`;
+  document.getElementById('home-greeting').textContent = timeGreeting + ', ' + firstName + '!';
+  document.getElementById('home-subtitle').textContent = angel.role + ' · Today\'s rounds';
 
-  // Load today's completed rounds for this angel
   const today = new Date().toISOString().split('T')[0];
   const { data: myRounds } = await db.from('rounds')
     .select('room_number, submitted_at, round_status')
@@ -211,19 +203,14 @@ async function renderHomeRecognized(angel) {
     const isDone = completedRooms.includes(room);
     const row = document.createElement('div');
     row.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 14px 16px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 8px; background: white;';
-    row.innerHTML = `
-      <div>
-        <div style="font-weight: 600; color: var(--text); font-size: 15px;">
-          ${isDone ? '✓' : '○'} Room ${room}
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">
-          ${isDone ? 'Completed' : 'Not yet started'}
-        </div>
-      </div>
-      <button class="btn-primary" style="flex: none; padding: 8px 14px; font-size: 13px;" onclick="startRoundForRoom('${room}')">
-        ${isDone ? 'Round again' : 'Start →'}
-      </button>
-    `;
+    row.innerHTML = '<div><div style="font-weight: 600; color: var(--text); font-size: 15px;">' +
+      (isDone ? '✓' : '○') + ' Room ' + room +
+      '</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 2px;">' +
+      (isDone ? 'Completed' : 'Not yet started') +
+      '</div></div>' +
+      '<button class="btn-primary" style="flex: none; padding: 8px 14px; font-size: 13px;" onclick="startRoundForRoom(\'' + room + '\')">' +
+      (isDone ? 'Round again' : 'Start →') +
+      '</button>';
     container.appendChild(row);
   });
 
@@ -232,7 +219,7 @@ async function renderHomeRecognized(angel) {
   summary.style.cssText = 'text-align: center; padding: 12px; margin-top: 12px; font-size: 13px; color: var(--text-muted);';
   summary.textContent = remaining === 0
     ? '🎉 All rooms rounded today. Great work!'
-    : `${remaining} room${remaining === 1 ? '' : 's'} remaining today`;
+    : remaining + ' room' + (remaining === 1 ? '' : 's') + ' remaining today';
   container.appendChild(summary);
 }
 
@@ -244,21 +231,19 @@ function startRoundForRoom(room) {
   roundData.round_date = new Date().toISOString().split('T')[0];
   roundData.room_number = room;
 
-  // Prep bed data for this room
   const roomBeds = bedsData.filter(b => b.room_number === room);
   bedData = roomBeds.map(b => makeEmptyBedRecord(b.bed_code));
 
   document.getElementById('home-screen').classList.add('hidden');
   document.getElementById('app').classList.remove('hidden');
 
-  // Pre-populate angel/room in step 1
   setTimeout(() => {
     populateAngels();
     document.getElementById('angel-select').value = currentAngel.id;
     onAngelChange();
     document.getElementById('room-select').value = room;
     onRoomChange();
-    goToStep(2); // Jump straight to First Look since Who & Where is already filled
+    goToStep(2);
   }, 100);
 }
 
@@ -306,7 +291,10 @@ function goToStep(step) {
 
   currentStep = step;
 
-  // Build bed content when entering step 4
+  if (step === 2 || step === 3) {
+    buildThreeStateButtons();
+  }
+
   if (step === 4 && bedData.length > 0) {
     buildBedTabs();
     showBedContent(0);
@@ -322,7 +310,7 @@ function goToStep(step) {
 function buildThreeStateButtons() {
   document.querySelectorAll('.three-state').forEach(q => {
     const btnContainer = q.querySelector('.q-buttons');
-    if (btnContainer.children.length > 0) return; // already built
+    if (btnContainer.children.length > 0) return;
 
     btnContainer.style.cssText = 'display: flex; gap: 6px; margin-top: 10px;';
     ['Meets Standard', 'Needs Attention', 'N/A'].forEach(label => {
@@ -330,17 +318,11 @@ function buildThreeStateButtons() {
       btn.type = 'button';
       btn.textContent = label === 'Meets Standard' ? '✓ Meets' : label === 'Needs Attention' ? '⚠ Needs Attention' : 'N/A';
       btn.className = 'ts-btn ts-' + label.toLowerCase().replace(/[^a-z]/g, '');
-      btn.style.cssText = `
-        flex: 1; padding: 10px 8px; border-radius: 6px;
-        border: 1px solid var(--border-strong); background: white;
-        font-size: 13px; font-weight: 500; cursor: pointer;
-        color: var(--text-muted); transition: all 0.15s;
-      `;
+      btn.style.cssText = 'flex: 1; padding: 10px 8px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; font-weight: 500; cursor: pointer; color: var(--text-muted); transition: all 0.15s;';
       btn.onclick = () => selectThreeState(q, label, btn);
       btnContainer.appendChild(btn);
     });
 
-    // Style the question text
     const qText = q.querySelector('.q-text');
     qText.style.cssText = 'font-size: 14px; color: var(--text); line-height: 1.4;';
 
@@ -352,7 +334,6 @@ function selectThreeState(qEl, value, btnEl) {
   const field = qEl.dataset.field;
   const section = qEl.dataset.section;
 
-  // Store the value (per-bed vs room-level)
   if (qEl.dataset.bedIdx !== undefined) {
     const idx = parseInt(qEl.dataset.bedIdx);
     bedData[idx][field] = value;
@@ -360,7 +341,6 @@ function selectThreeState(qEl, value, btnEl) {
     roundData[field] = value;
   }
 
-  // Visual state
   qEl.querySelectorAll('.ts-btn').forEach(b => {
     b.style.background = 'white';
     b.style.color = 'var(--text-muted)';
@@ -384,18 +364,17 @@ function selectThreeState(qEl, value, btnEl) {
     btnEl.style.borderColor = 'var(--border-strong)';
   }
 
-  // Show/hide follow-up field
   const followup = qEl.querySelector('.q-followup');
   if (value === 'Needs Attention') {
     if (followup.innerHTML === '') {
-      followup.innerHTML = `<textarea placeholder="What did you observe?" style="margin-top: 8px; min-height: 60px; font-size: 14px;" oninput="saveFollowupNote(this, '${field}', '${qEl.dataset.bedIdx || ''}')"></textarea>`;
+      const bedIdxAttr = qEl.dataset.bedIdx || '';
+      followup.innerHTML = '<textarea placeholder="What did you observe?" style="margin-top: 8px; min-height: 60px; font-size: 14px;" oninput="saveFollowupNote(this, \'' + field + '\', \'' + bedIdxAttr + '\')"></textarea>';
     }
     followup.classList.remove('hidden');
   } else {
     followup.classList.add('hidden');
   }
 
-  // If any answer changes to Needs Attention, undo the "mark all clear" state
   if (value === 'Needs Attention' && section) {
     const btn = document.getElementById('markall-' + section);
     if (btn && btn.dataset.markedAll === 'true') {
@@ -514,15 +493,14 @@ function onRoomChange() {
 
   const bedCount = bedData.length;
   document.getElementById('bed-count-note').textContent =
-    `This room has ${bedCount} bed${bedCount === 1 ? '' : 's'} to check.`;
+    'This room has ' + bedCount + ' bed' + (bedCount === 1 ? '' : 's') + ' to check.';
 
-  // Show unresolved items for this room
   const unresolved = recentActionItems.filter(a => a.room_number === roomSelect.value);
   if (unresolved.length > 0) {
     const listEl = document.getElementById('unresolved-list');
     listEl.innerHTML = unresolved.map(a => {
       const urgent = a.urgent ? ' 🚨' : '';
-      return `<div style="margin-bottom: 4px;">• ${a.description}${urgent} <em style="color: var(--text-muted);">(→ ${a.assigned_to_role})</em></div>`;
+      return '<div style="margin-bottom: 4px;">• ' + a.description + urgent + ' <em style="color: var(--text-muted);">(→ ' + a.assigned_to_role + ')</em></div>';
     }).join('');
     document.getElementById('unresolved-items').classList.remove('hidden');
   } else {
@@ -534,7 +512,6 @@ function makeEmptyBedRecord(bedCode) {
   return {
     bed_code: bedCode,
     resident_state: null,
-    // Environment
     call_light_reach: null,
     call_light_functional: null,
     water_available: null,
@@ -543,7 +520,6 @@ function makeEmptyBedRecord(bedCode) {
     bedside_table_organized: null,
     hygiene_items_organized: null,
     area_under_bed_clear: null,
-    // Appearance
     resident_clean_appearance: null,
     grooming_appropriate: null,
     oral_hygiene_ok: null,
@@ -551,7 +527,6 @@ function makeEmptyBedRecord(bedCode) {
     resident_comfortably_positioned: null,
     resident_no_pain_signs: null,
     nails_ok: null,
-    // Equipment
     has_oxygen: false,
     has_catheter: false,
     has_fall_mat: false,
@@ -568,7 +543,6 @@ function makeEmptyBedRecord(bedCode) {
     mat_clean_no_stains: null,
     mat_not_ripped: null,
     mat_positioned_ok: null,
-    // Conversation
     staff_treating_well: null,
     environment_comfortable: null,
     resident_own_words: '',
@@ -589,11 +563,7 @@ function buildBedTabs() {
     tab.type = 'button';
     tab.textContent = bed.bed_code;
     tab.dataset.idx = idx;
-    tab.style.cssText = `
-      padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong);
-      background: white; font-size: 13px; font-weight: 500; cursor: pointer;
-      flex-shrink: 0; color: var(--text-muted);
-    `;
+    tab.style.cssText = 'padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; font-weight: 500; cursor: pointer; flex-shrink: 0; color: var(--text-muted);';
     tab.onclick = () => showBedContent(idx);
     container.appendChild(tab);
   });
@@ -602,7 +572,6 @@ function buildBedTabs() {
 function showBedContent(idx) {
   currentBedTab = idx;
 
-  // Highlight active tab
   document.querySelectorAll('#bed-tabs button').forEach((t, i) => {
     if (i === idx) {
       t.style.background = 'var(--purple)';
@@ -621,143 +590,125 @@ function showBedContent(idx) {
   const bed = bedData[idx];
   const isTuesday = new Date().getDay() === 2;
 
-  // Check if nails were already checked this week
   const nailsAlreadyChecked = weeklyChecksData.some(w =>
     w.bed_code === bed.bed_code && w.check_type === 'nails'
   );
 
-  container.innerHTML = `
-    <div style="padding: 8px 0; margin-bottom: 12px;">
-      <div style="font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Bed</div>
-      <div style="font-size: 18px; font-weight: 600; color: var(--text); margin-top: 2px;">${bed.bed_code}</div>
-    </div>
+  let html = '';
+  html += '<div style="padding: 8px 0; margin-bottom: 12px;">';
+  html += '<div style="font-size: 12px; color: var(--text-muted); font-weight: 600; letter-spacing: 1px; text-transform: uppercase;">Bed</div>';
+  html += '<div style="font-size: 18px; font-weight: 600; color: var(--text); margin-top: 2px;">' + bed.bed_code + '</div>';
+  html += '</div>';
 
-    <label>Resident state <span class="required">*</span></label>
-    <div class="state-grid">
-      <button type="button" class="state-btn" data-state="awake" onclick="selectBedState(${idx}, this, 'awake')">Awake &amp; responsive</button>
-      <button type="button" class="state-btn" data-state="sleeping" onclick="selectBedState(${idx}, this, 'sleeping')">Sleeping</button>
-      <button type="button" class="state-btn" data-state="away" onclick="selectBedState(${idx}, this, 'away')">Away from room</button>
-      <button type="button" class="state-btn" data-state="empty_bed" onclick="selectBedState(${idx}, this, 'empty_bed')">Empty bed</button>
-      <button type="button" class="state-btn" data-state="no_response" onclick="selectBedState(${idx}, this, 'no_response')" style="grid-column: span 2;">Resident does not respond</button>
-    </div>
+  html += '<label>Resident state <span class="required">*</span></label>';
+  html += '<div class="state-grid">';
+  html += '<button type="button" class="state-btn" data-state="awake" onclick="selectBedState(' + idx + ', this, \'awake\')">Awake &amp; responsive</button>';
+  html += '<button type="button" class="state-btn" data-state="sleeping" onclick="selectBedState(' + idx + ', this, \'sleeping\')">Sleeping</button>';
+  html += '<button type="button" class="state-btn" data-state="away" onclick="selectBedState(' + idx + ', this, \'away\')">Away from room</button>';
+  html += '<button type="button" class="state-btn" data-state="empty_bed" onclick="selectBedState(' + idx + ', this, \'empty_bed\')">Empty bed</button>';
+  html += '<button type="button" class="state-btn" data-state="no_response" onclick="selectBedState(' + idx + ', this, \'no_response\')" style="grid-column: span 2;">Resident does not respond</button>';
+  html += '</div>';
 
-    <div id="bed-details-${idx}" class="hidden">
+  html += '<div id="bed-details-' + idx + '" class="hidden">';
 
-      <div class="section-label">Bedside environment</div>
+  html += '<div class="section-label">Bedside environment</div>';
+  html += buildBedQuestion(idx, 'call_light_reach', 'Call light is within the resident reach.');
+  html += buildBedQuestion(idx, 'call_light_functional', 'Call light appears functional.');
+  html += buildBedQuestion(idx, 'water_available', 'Water is available and within reach when appropriate.');
+  html += buildBedQuestion(idx, 'tv_remote_reach', 'TV remote and/or telephone are within reach when used.');
+  html += buildBedQuestion(idx, 'bed_safe_position', 'Bed is stable, brakes locked when applicable.');
+  html += buildBedQuestion(idx, 'area_under_bed_clear', 'Area under and around the bed is free of inappropriate stored items.');
+  html += buildBedQuestion(idx, 'bedside_table_organized', 'Bedside table is reasonably organized, respecting resident preferences.');
+  html += buildBedQuestion(idx, 'hygiene_items_organized', 'Hygiene items are stored in an organized manner.');
 
-      ${buildBedQuestion(idx, 'call_light_reach', 'Call light is within the resident\\'s reach.')}
-      ${buildBedQuestion(idx, 'call_light_functional', 'Call light appears functional.')}
-      ${buildBedQuestion(idx, 'water_available', 'Water is available and within reach when appropriate.')}
-      ${buildBedQuestion(idx, 'tv_remote_reach', 'TV remote and/or telephone are within reach when used.')}
-      ${buildBedQuestion(idx, 'bed_safe_position', 'Bed is stable, brakes locked when applicable, no obvious equipment hazard.')}
-      ${buildBedQuestion(idx, 'area_under_bed_clear', 'Area under and around the bed is free of inappropriate stored items.')}
-      ${buildBedQuestion(idx, 'bedside_table_organized', 'Bedside table is reasonably organized, respecting resident preferences.')}
-      ${buildBedQuestion(idx, 'hygiene_items_organized', 'Hygiene items are stored in an organized manner.')}
+  html += '<div class="section-label">Resident appearance &amp; comfort</div>';
+  html += buildBedQuestion(idx, 'resident_clean_appearance', 'Resident appears clean and free of obvious food, crumbs or significant stains.');
+  html += buildBedQuestion(idx, 'grooming_appropriate', 'Hair and grooming appear appropriate for the resident condition and time of day.');
+  html += buildBedQuestion(idx, 'oral_hygiene_ok', 'Oral hygiene appears appropriate based on observation.');
+  html += buildBedQuestion(idx, 'no_body_odor', 'No significant body odor or hygiene concern observed.');
+  html += buildBedQuestion(idx, 'resident_comfortably_positioned', 'Resident appears comfortably positioned.');
+  html += buildBedQuestion(idx, 'resident_no_pain_signs', 'Resident appears comfortable with no obvious signs of pain or distress.', 'Ask: Are you having any pain or discomfort right now?');
 
-      <div class="section-label">Resident appearance &amp; comfort</div>
+  if (nailsAlreadyChecked) {
+    html += '<div style="padding: 12px; background: var(--bg-success); border-radius: 6px; margin: 12px 0; font-size: 13px; color: var(--green);">✓ Nails checked this week</div>';
+  } else if (isTuesday) {
+    html += '<div style="padding: 12px; background: var(--bg-warning); border-radius: 6px; margin: 12px 0;">';
+    html += '<div style="font-size: 13px; font-weight: 600; color: var(--orange); margin-bottom: 6px;">Weekly nail check (Tuesdays)</div>';
+    html += buildBedQuestion(idx, 'nails_ok', 'Nails appear clean and appropriately maintained.');
+    html += '</div>';
+  }
 
-      ${buildBedQuestion(idx, 'resident_clean_appearance', 'Resident appears clean and free of obvious food, crumbs or significant stains.')}
-      ${buildBedQuestion(idx, 'grooming_appropriate', 'Hair and grooming appear appropriate for the resident\\'s condition and time of day.')}
-      ${buildBedQuestion(idx, 'oral_hygiene_ok', 'Oral hygiene appears appropriate based on observation.')}
-      ${buildBedQuestion(idx, 'no_body_odor', 'No significant body odor or hygiene concern observed.')}
-      ${buildBedQuestion(idx, 'resident_comfortably_positioned', 'Resident appears comfortably positioned.')}
-      ${buildBedQuestion(idx, 'resident_no_pain_signs', 'Resident appears comfortable with no obvious signs of pain or distress.', 'Ask: "Are you having any pain or discomfort right now?"')}
+  html += '<div class="section-label">Equipment</div>';
+  html += '<div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Does this resident have any of the following?</div>';
+  html += '<div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">';
+  html += '<button type="button" class="eq-btn" data-eq="none" onclick="toggleEquipment(' + idx + ', \'none\', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">None</button>';
+  html += '<button type="button" class="eq-btn" data-eq="oxygen" onclick="toggleEquipment(' + idx + ', \'oxygen\', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">Oxygen</button>';
+  html += '<button type="button" class="eq-btn" data-eq="catheter" onclick="toggleEquipment(' + idx + ', \'catheter\', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">Catheter</button>';
+  html += '<button type="button" class="eq-btn" data-eq="fall_mat" onclick="toggleEquipment(' + idx + ', \'fall_mat\', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">Fall/floor mat</button>';
+  html += '</div>';
 
-      ${nailsAlreadyChecked
-        ? `<div style="padding: 12px; background: var(--bg-success); border-radius: 6px; margin: 12px 0; font-size: 13px; color: var(--green);">✓ Nails checked this week</div>`
-        : isTuesday
-          ? `<div style="padding: 12px; background: var(--bg-warning); border-radius: 6px; margin: 12px 0;">
-               <div style="font-size: 13px; font-weight: 600; color: var(--orange); margin-bottom: 6px;">Weekly nail check (Tuesdays)</div>
-               ${buildBedQuestion(idx, 'nails_ok', 'Nails appear clean and appropriately maintained.')}
-             </div>`
-          : ''
-      }
+  html += '<div id="eq-oxygen-' + idx + '" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">';
+  html += '<div class="section-label" style="margin-top: 0;">Oxygen</div>';
+  html += buildBedQuestion(idx, 'o2_tubing_no_kinks', 'Oxygen tubing is positioned without obvious kinks.');
+  html += buildBedQuestion(idx, 'o2_tubing_off_floor', 'Oxygen tubing is kept off the floor.');
+  html += buildBedQuestion(idx, 'o2_tubing_dated_7_days', 'Oxygen tubing and bag dated within 7 days.');
+  html += buildBedQuestion(idx, 'o2_no_smoking_sign', 'NO SMOKING / oxygen safety sign is present.');
+  html += '</div>';
 
-      <div class="section-label">Equipment</div>
+  html += '<div id="eq-catheter-' + idx + '" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">';
+  html += '<div class="section-label" style="margin-top: 0;">Catheter</div>';
+  html += buildBedQuestion(idx, 'cath_bag_dignity_cover', 'Catheter bag is covered with a dignity/privacy bag.');
+  html += buildBedQuestion(idx, 'cath_bag_off_floor', 'Catheter bag is not touching the floor.');
+  html += buildBedQuestion(idx, 'cath_tubing_no_kinks', 'Tubing is positioned without obvious kinks.');
+  html += buildBedQuestion(idx, 'cath_tubing_not_trapped', 'Tubing is not trapped under the resident leg or body.');
+  html += buildBedQuestion(idx, 'cath_tubing_clean', 'Tubing does not appear visibly soiled or discolored.');
+  html += '</div>';
 
-      <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Does this resident have any of the following?</div>
+  html += '<div id="eq-fall_mat-' + idx + '" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">';
+  html += '<div class="section-label" style="margin-top: 0;">Fall / Floor Mat</div>';
+  html += buildBedQuestion(idx, 'mat_clear_of_furniture', 'Mat is clear of furniture.');
+  html += buildBedQuestion(idx, 'mat_clean_no_stains', 'Mat is clean and free of significant stains.');
+  html += buildBedQuestion(idx, 'mat_not_ripped', 'Mat is not ripped.');
+  html += buildBedQuestion(idx, 'mat_positioned_ok', 'Mat is positioned appropriately.');
+  html += '</div>';
 
-      <div style="display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px;">
-        <button type="button" class="eq-btn" data-eq="none" onclick="toggleEquipment(${idx}, 'none', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">None</button>
-        <button type="button" class="eq-btn" data-eq="oxygen" onclick="toggleEquipment(${idx}, 'oxygen', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">Oxygen</button>
-        <button type="button" class="eq-btn" data-eq="catheter" onclick="toggleEquipment(${idx}, 'catheter', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">Catheter</button>
-        <button type="button" class="eq-btn" data-eq="fall_mat" onclick="toggleEquipment(${idx}, 'fall_mat', this)" style="padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer;">Fall/floor mat</button>
-      </div>
+  html += '<div id="conversation-' + idx + '" class="hidden">';
+  html += '<div class="section-label">Resident conversation</div>';
+  html += '<div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">Spend a moment talking with the resident. Try: <em>How are you doing today? · Is there anything I can help you with? · How has staff been treating you?</em></div>';
+  html += buildBedQuestion(idx, 'staff_treating_well', 'Resident reports staff are treating them well.');
+  html += buildBedQuestion(idx, 'environment_comfortable', 'Resident reports feeling comfortable with their environment.');
+  html += '<label style="margin-top: 16px;">Any concerns expressed? (tap all that apply)</label>';
+  html += '<div id="concerns-' + idx + '" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">';
+  CONCERNS_LIST.forEach(c => {
+    html += '<button type="button" class="concern-chip" data-key="' + c.key + '" onclick="toggleConcern(' + idx + ', \'' + c.key + '\', this)" style="padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer; color: var(--text-muted);">' + c.label + '</button>';
+  });
+  html += '</div>';
+  html += '<label style="margin-top: 16px;">In the resident own words (optional)</label>';
+  html += '<textarea id="own-words-' + idx + '" placeholder="e.g., I wish someone would walk me outside more often" oninput="bedData[' + idx + '].resident_own_words = this.value"></textarea>';
+  html += '<label style="margin-top: 12px;">Did you ask: Is there anything I can do for you right now?</label>';
+  html += '<div class="state-grid" style="margin-top: 8px;">';
+  html += '<button type="button" class="state-btn help-btn-' + idx + '" onclick="selectHelpAsked(' + idx + ', this, \'Yes\')">Yes</button>';
+  html += '<button type="button" class="state-btn help-btn-' + idx + '" onclick="selectHelpAsked(' + idx + ', this, \'No\')">No</button>';
+  html += '</div>';
+  html += '</div>';
 
-      <div id="eq-oxygen-${idx}" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-        <div class="section-label" style="margin-top: 0;">Oxygen</div>
-        ${buildBedQuestion(idx, 'o2_tubing_no_kinks', 'Oxygen tubing is positioned without obvious kinks.')}
-        ${buildBedQuestion(idx, 'o2_tubing_off_floor', 'Oxygen tubing is kept off the floor.')}
-        ${buildBedQuestion(idx, 'o2_tubing_dated_7_days', 'Oxygen tubing and bag dated within 7 days.')}
-        ${buildBedQuestion(idx, 'o2_no_smoking_sign', 'NO SMOKING / oxygen safety sign is present.')}
-      </div>
+  html += '</div>';
 
-      <div id="eq-catheter-${idx}" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-        <div class="section-label" style="margin-top: 0;">Catheter</div>
-        ${buildBedQuestion(idx, 'cath_bag_dignity_cover', 'Catheter bag is covered with a dignity/privacy bag.')}
-        ${buildBedQuestion(idx, 'cath_bag_off_floor', 'Catheter bag is not touching the floor.')}
-        ${buildBedQuestion(idx, 'cath_tubing_no_kinks', 'Tubing is positioned without obvious kinks.')}
-        ${buildBedQuestion(idx, 'cath_tubing_not_trapped', 'Tubing is not trapped under the resident\\'s leg or body.')}
-        ${buildBedQuestion(idx, 'cath_tubing_clean', 'Tubing does not appear visibly soiled or discolored.')}
-      </div>
+  container.innerHTML = html;
 
-      <div id="eq-fall_mat-${idx}" class="hidden" style="background: var(--bg); padding: 12px; border-radius: 8px; margin-bottom: 10px;">
-        <div class="section-label" style="margin-top: 0;">Fall / Floor Mat</div>
-        ${buildBedQuestion(idx, 'mat_clear_of_furniture', 'Mat is clear of furniture.')}
-        ${buildBedQuestion(idx, 'mat_clean_no_stains', 'Mat is clean and free of significant stains.')}
-        ${buildBedQuestion(idx, 'mat_not_ripped', 'Mat is not ripped.')}
-        ${buildBedQuestion(idx, 'mat_positioned_ok', 'Mat is positioned appropriately.')}
-      </div>
-
-      <div id="conversation-${idx}" class="hidden">
-        <div class="section-label">Resident conversation</div>
-        <div style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
-          Spend a moment talking with the resident. Try:
-          <em>"How are you doing today?" · "Is there anything I can help you with?" · "How has staff been treating you?"</em>
-        </div>
-
-        ${buildBedQuestion(idx, 'staff_treating_well', 'Resident reports staff are treating them well.')}
-        ${buildBedQuestion(idx, 'environment_comfortable', 'Resident reports feeling comfortable with their environment.')}
-
-        <label style="margin-top: 16px;">Any concerns expressed? (tap all that apply)</label>
-        <div id="concerns-${idx}" style="display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px;">
-          ${CONCERNS_LIST.map(c => `
-            <button type="button" class="concern-chip" data-key="${c.key}" onclick="toggleConcern(${idx}, '${c.key}', this)"
-              style="padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border-strong); background: white; font-size: 13px; cursor: pointer; color: var(--text-muted);">
-              ${c.label}
-            </button>
-          `).join('')}
-        </div>
-
-        <label style="margin-top: 16px;">In the resident's own words (optional)</label>
-        <textarea id="own-words-${idx}" placeholder='e.g., "I wish someone would walk me outside more often"'
-                  oninput="bedData[${idx}].resident_own_words = this.value"></textarea>
-
-        <label style="margin-top: 12px;">Did you ask: "Is there anything I can do for you right now?"</label>
-        <div class="state-grid" style="margin-top: 8px;">
-          <button type="button" class="state-btn help-btn-${idx}" onclick="selectHelpAsked(${idx}, this, 'Yes')">Yes</button>
-          <button type="button" class="state-btn help-btn-${idx}" onclick="selectHelpAsked(${idx}, this, 'No')">No</button>
-        </div>
-      </div>
-
-    </div>
-  `;
-
-  // Set state button if already picked
   if (bed.resident_state) {
-    const stateBtn = container.querySelector(`[data-state="${bed.resident_state}"]`);
+    const stateBtn = container.querySelector('[data-state="' + bed.resident_state + '"]');
     if (stateBtn) {
       stateBtn.classList.add('selected');
       if (bed.resident_state === 'awake' || bed.resident_state === 'sleeping' || bed.resident_state === 'no_response') {
-        document.getElementById(`bed-details-${idx}`).classList.remove('hidden');
+        document.getElementById('bed-details-' + idx).classList.remove('hidden');
       }
       if (bed.resident_state === 'awake') {
-        document.getElementById(`conversation-${idx}`).classList.remove('hidden');
+        document.getElementById('conversation-' + idx).classList.remove('hidden');
       }
     }
   }
 
-  // Restore three-state answers
   buildThreeStateButtons();
   restoreBedAnswers(idx);
 
@@ -765,47 +716,43 @@ function showBedContent(idx) {
 }
 
 function buildBedQuestion(bedIdx, field, text, helperText) {
-  const helper = helperText ? `<div style="font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 2px;">${helperText}</div>` : '';
-  return `
-    <div class="three-state" data-field="${field}" data-bed-idx="${bedIdx}">
-      <div class="q-text">${text}</div>
-      ${helper}
-      <div class="q-buttons"></div>
-      <div class="q-followup hidden"></div>
-    </div>
-  `;
+  const helper = helperText ? '<div style="font-size: 12px; color: var(--text-muted); font-style: italic; margin-top: 2px;">' + helperText + '</div>' : '';
+  return '<div class="three-state" data-field="' + field + '" data-bed-idx="' + bedIdx + '">' +
+    '<div class="q-text">' + text + '</div>' +
+    helper +
+    '<div class="q-buttons"></div>' +
+    '<div class="q-followup hidden"></div>' +
+    '</div>';
 }
 
 function restoreBedAnswers(idx) {
   const bed = bedData[idx];
-  document.querySelectorAll(`.three-state[data-bed-idx="${idx}"]`).forEach(q => {
+  document.querySelectorAll('.three-state[data-bed-idx="' + idx + '"]').forEach(q => {
     const field = q.dataset.field;
     const value = bed[field];
     if (!value) return;
-    const btn = q.querySelector(value === 'Meets Standard' ? '.ts-meets' : value === 'Needs Attention' ? '.ts-needsattention' : '.ts-na');
+    const btnClass = value === 'Meets Standard' ? '.ts-meets' : value === 'Needs Attention' ? '.ts-needsattention' : '.ts-na';
+    const btn = q.querySelector(btnClass);
     if (btn) selectThreeState(q, value, btn);
   });
 
-  // Restore equipment selection
   ['oxygen', 'catheter', 'fall_mat'].forEach(eq => {
     const key = 'has_' + eq;
     if (bed[key]) {
-      const btn = document.querySelector(`#bed-content-container [data-eq="${eq}"]`);
+      const btn = document.querySelector('#bed-content-container [data-eq="' + eq + '"]');
       if (btn) toggleEquipment(idx, eq, btn, true);
     }
   });
 
-  // Restore concerns
   if (bed.concerns_mentioned) {
     const selected = bed.concerns_mentioned.split(',').filter(Boolean);
     selected.forEach(key => {
-      const chip = document.querySelector(`#concerns-${idx} [data-key="${key}"]`);
+      const chip = document.querySelector('#concerns-' + idx + ' [data-key="' + key + '"]');
       if (chip) toggleConcern(idx, key, chip, true);
     });
   }
 
-  // Restore text
-  const ownWords = document.getElementById(`own-words-${idx}`);
+  const ownWords = document.getElementById('own-words-' + idx);
   if (ownWords) ownWords.value = bed.resident_own_words || '';
 }
 
@@ -815,8 +762,8 @@ function selectBedState(idx, btn, state) {
   btn.classList.add('selected');
   bedData[idx].resident_state = state;
 
-  const details = document.getElementById(`bed-details-${idx}`);
-  const conversation = document.getElementById(`conversation-${idx}`);
+  const details = document.getElementById('bed-details-' + idx);
+  const conversation = document.getElementById('conversation-' + idx);
 
   if (state === 'away' || state === 'empty_bed') {
     details.classList.add('hidden');
@@ -834,18 +781,17 @@ function toggleEquipment(idx, eq, btn, restore) {
   const bed = bedData[idx];
 
   if (eq === 'none') {
-    // Deselect everything
     ['oxygen', 'catheter', 'fall_mat'].forEach(x => {
       bed['has_' + x] = false;
-      document.getElementById(`eq-${x}-${idx}`).classList.add('hidden');
-      const b = document.querySelector(`#bed-content-container [data-eq="${x}"]`);
+      document.getElementById('eq-' + x + '-' + idx).classList.add('hidden');
+      const b = document.querySelector('#bed-content-container [data-eq="' + x + '"]');
       if (b) {
         b.style.background = 'white';
         b.style.color = 'var(--text)';
         b.style.borderColor = 'var(--border-strong)';
       }
     });
-    document.querySelectorAll(`#bed-content-container [data-eq="none"]`).forEach(b => {
+    document.querySelectorAll('#bed-content-container [data-eq="none"]').forEach(b => {
       b.style.background = 'var(--purple)';
       b.style.color = 'white';
       b.style.borderColor = 'var(--purple)';
@@ -860,9 +806,8 @@ function toggleEquipment(idx, eq, btn, restore) {
     btn.style.background = 'var(--purple)';
     btn.style.color = 'white';
     btn.style.borderColor = 'var(--purple)';
-    document.getElementById(`eq-${eq}-${idx}`).classList.remove('hidden');
-    // Deselect None
-    const noneBtn = document.querySelector(`#bed-content-container [data-eq="none"]`);
+    document.getElementById('eq-' + eq + '-' + idx).classList.remove('hidden');
+    const noneBtn = document.querySelector('#bed-content-container [data-eq="none"]');
     if (noneBtn) {
       noneBtn.style.background = 'white';
       noneBtn.style.color = 'var(--text)';
@@ -872,7 +817,7 @@ function toggleEquipment(idx, eq, btn, restore) {
     btn.style.background = 'white';
     btn.style.color = 'var(--text)';
     btn.style.borderColor = 'var(--border-strong)';
-    document.getElementById(`eq-${eq}-${idx}`).classList.add('hidden');
+    document.getElementById('eq-' + eq + '-' + idx).classList.add('hidden');
   }
 }
 
@@ -880,7 +825,6 @@ function toggleConcern(idx, key, btn, restore) {
   const bed = bedData[idx];
   const current = bed.concerns_mentioned ? bed.concerns_mentioned.split(',').filter(Boolean) : [];
   const isSelected = current.includes(key);
-
   const shouldSelect = restore ? true : !isSelected;
 
   if (shouldSelect && !isSelected) {
@@ -902,7 +846,7 @@ function toggleConcern(idx, key, btn, restore) {
 }
 
 function selectHelpAsked(idx, btn, value) {
-  document.querySelectorAll(`.help-btn-${idx}`).forEach(b => b.classList.remove('selected'));
+  document.querySelectorAll('.help-btn-' + idx).forEach(b => b.classList.remove('selected'));
   btn.classList.add('selected');
   bedData[idx].asked_if_help_needed = value;
 }
@@ -994,20 +938,16 @@ async function submitRound() {
   }
 
   try {
-    // Clean roundData — remove any legacy null fields that don't exist in schema
     const cleanRound = { ...roundData };
-
     const { data: roundResult, error: roundError } = await db.from('rounds').insert([cleanRound]).select();
     if (roundError) throw roundError;
     const newRoundId = roundResult[0].id;
 
-    // Insert per-bed data
     if (bedData.length > 0) {
       const bedRows = bedData.map(b => ({ ...b, round_id: newRoundId }));
       const { error: bedError } = await db.from('round_beds').insert(bedRows);
       if (bedError) throw bedError;
 
-      // Track weekly nail checks
       const isTuesday = new Date().getDay() === 2;
       if (isTuesday) {
         for (const bed of bedData) {
@@ -1023,10 +963,8 @@ async function submitRound() {
       }
     }
 
-    // Create action items from Needs Attention answers
     await createActionItemsFromNeedsAttention(newRoundId);
 
-    // User-declared follow-up
     if (roundData.followup_needed) {
       const rule = routingRules.find(r => r.category === followupData.category);
       const assignedRole = rule ? rule.routes_to_role : 'Administrator';
@@ -1059,7 +997,6 @@ async function submitRound() {
 async function createActionItemsFromNeedsAttention(roundId) {
   const items = [];
 
-  // Room + bathroom level
   for (const key of Object.keys(roundData)) {
     if (roundData[key] === 'Needs Attention') {
       const note = roundData[key + '_note'] || '';
@@ -1076,7 +1013,6 @@ async function createActionItemsFromNeedsAttention(roundId) {
     }
   }
 
-  // Per-bed level
   for (const bed of bedData) {
     for (const key of Object.keys(bed)) {
       if (bed[key] === 'Needs Attention') {
@@ -1088,7 +1024,7 @@ async function createActionItemsFromNeedsAttention(roundId) {
           reported_by_person: roundData.angel_person,
           category: 'auto_flagged',
           assigned_to_role: guessDepartment(key),
-          description: `[${bed.bed_code}] ` + humanizeField(key) + (note ? ' — ' + note : ''),
+          description: '[' + bed.bed_code + '] ' + humanizeField(key) + (note ? ' — ' + note : ''),
           urgent: false
         });
       }
@@ -1122,7 +1058,7 @@ function showSuccessScreen() {
   document.getElementById('progress-bar-container').classList.add('hidden');
   document.getElementById('success-screen').classList.remove('hidden');
   document.getElementById('success-summary').textContent =
-    `Room ${roundData.room_number} complete (${bedData.length} bed${bedData.length === 1 ? '' : 's'}). Great work.`;
+    'Room ' + roundData.room_number + ' complete (' + bedData.length + ' bed' + (bedData.length === 1 ? '' : 's') + '). Great work.';
 }
 
 function resetRoundData() {
@@ -1132,7 +1068,6 @@ function resetRoundData() {
     room_number: null,
     round_date: null,
     round_status: 'submitted',
-    // First look
     names_on_door_accurate: null,
     no_visible_phi: null,
     walking_paths_clear: null,
@@ -1147,7 +1082,6 @@ function resetRoundData() {
     room_furniture_safe: null,
     gloves_stocked_v2: null,
     room_notes: '',
-    // Bathroom
     bathroom_floor_clean: null,
     bathroom_no_odor: null,
     bathroom_toilet_sink_clean: null,
@@ -1155,12 +1089,10 @@ function resetRoundData() {
     bathroom_no_personal_products: null,
     bathroom_no_urinals_bedpans: null,
     bathroom_notes: '',
-    // Staff
     staff_seen: null,
     staff_name_badge: null,
     staff_acknowledged: null,
     staff_notes: '',
-    // Wrap-up
     overall_rating: null,
     followup_needed: null,
     additional_notes: ''
