@@ -51,9 +51,6 @@ const FIRSTLOOK_QUESTIONS = [
   { field: 'walls_surfaces_ok', text: 'Walls, doors and surfaces are free of significant damage.' },
   { field: 'floors_clean_dry', text: 'Floors appear clean, dry and not sticky.' },
   { field: 'no_exposed_linens', text: 'No unnecessary linens left exposed in the room.' },
-  { field: 'curtains_clean_intact', text: 'Privacy curtains are clean and intact.' },
-  { field: 'bed_linens_pillows_clean', text: 'Bed linens and pillows appear clean.' },
-  { field: 'furniture_good_repair', text: 'Closets, dressers and furniture in good repair.' },
   { field: 'gloves_stocked_v2', text: 'Gloves are stocked.' }
 ];
 
