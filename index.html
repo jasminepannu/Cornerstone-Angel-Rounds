@@ -9,9 +9,7 @@
 </head>
 <body>
 
-  <!-- ============================================
-       PASSCODE GATE
-       ============================================ -->
+  <!-- PASSCODE GATE -->
   <div id="passcode-screen" class="passcode-gate">
     <div class="brand">Cornerstone</div>
     <div class="tagline">Angel Rounds</div>
@@ -25,9 +23,7 @@
     </div>
   </div>
 
-  <!-- ============================================
-       HOME SCREEN (shows after passcode)
-       ============================================ -->
+  <!-- HOME SCREEN -->
   <div id="home-screen" class="hidden">
     <div class="header">
       <div class="brand">Cornerstone</div>
@@ -47,7 +43,6 @@
 
         <div id="home-recognized" class="hidden">
           <div id="home-rooms-list"></div>
-
           <div style="margin-top: 20px;">
             <button class="btn-secondary" onclick="switchUser()" style="font-size: 13px;">Not you? Switch user</button>
           </div>
@@ -56,21 +51,16 @@
     </div>
   </div>
 
-  <!-- ============================================
-       MAIN ROUND FORM
-       ============================================ -->
+  <!-- MAIN APP -->
   <div id="app" class="hidden">
-
     <div class="header">
       <div class="brand">Cornerstone</div>
-      <div class="subtitle">
-        <span id="round-header-title">Round in progress</span>
-      </div>
+      <div class="subtitle"><span id="round-header-title">Round in progress</span></div>
     </div>
 
     <div class="container">
 
-      <!-- Progress bar with step name -->
+      <!-- Progress bar -->
       <div id="progress-bar-container" style="padding: 16px 0 20px;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
           <span id="step-label" style="font-size: 13px; font-weight: 600; color: var(--purple);">Step 1 of 6</span>
@@ -81,9 +71,7 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 1: WHO & WHERE
-           ============================================ -->
+      <!-- STEP 1: WHO & WHERE -->
       <div id="step-1" class="step">
         <div class="card">
           <h2>Who &amp; Where</h2>
@@ -115,108 +103,23 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 2: FIRST LOOK (whole room)
-           ============================================ -->
+      <!-- STEP 2: FIRST LOOK -->
       <div id="step-2" class="step hidden">
         <div class="card">
           <h2>First Look</h2>
-          <p class="subtitle">Pause at the doorway. Assess the whole room before approaching beds.</p>
+          <p class="subtitle">Pause at the doorway. Assess the whole room.</p>
 
-          <!-- Mark all clear button (undoable) -->
           <button type="button" id="markall-firstlook" class="btn-secondary" onclick="markAllStandard('firstlook')" style="width: 100%; margin: 12px 0;">
-            ✓ Mark all First Look items as Meets Standard
+            ✓ Mark all as Meets Standard
           </button>
-          <div id="undo-firstlook" class="hidden" style="text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+          <div id="undo-firstlook" class="hidden" style="text-align: center; font-size: 12px; margin-bottom: 8px;">
             <button type="button" onclick="undoMarkAll('firstlook')" style="background: none; border: none; color: var(--purple); text-decoration: underline; cursor: pointer; padding: 0;">Undo mark all</button>
           </div>
 
-          <div class="section-label">A · Room ID &amp; Privacy</div>
-
-          <div id="q-names_on_door_accurate" class="three-state" data-field="names_on_door_accurate" data-section="firstlook">
-            <div class="q-text">All resident names displayed on the room door are accurate.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-no_visible_phi" class="three-state" data-field="no_visible_phi" data-section="firstlook">
-            <div class="q-text">No clinical or personal care information is visibly posted where it could compromise resident privacy.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div class="section-label">B · General Room Condition</div>
-
-          <div id="q-walking_paths_clear" class="three-state" data-field="walking_paths_clear" data-section="firstlook">
-            <div class="q-text">Walking paths are clear and free of unnecessary clutter or trip hazards.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-room_no_odor" class="three-state" data-field="room_no_odor" data-section="firstlook">
-            <div class="q-text">Room is free of strong or unpleasant odor.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-room_temperature_ok" class="three-state" data-field="room_temperature_ok" data-section="firstlook">
-            <div class="q-text">Room temperature appears comfortable.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-walls_surfaces_ok" class="three-state" data-field="walls_surfaces_ok" data-section="firstlook">
-            <div class="q-text">Walls, doors, trim and visible surfaces are free of significant damage.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-floors_clean_dry" class="three-state" data-field="floors_clean_dry" data-section="firstlook">
-            <div class="q-text">Floors appear clean, dry and free of visible debris or sticky areas.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-no_exposed_linens" class="three-state" data-field="no_exposed_linens" data-section="firstlook">
-            <div class="q-text">No unnecessary linens or facility supplies left exposed in the room.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-curtains_clean_intact" class="three-state" data-field="curtains_clean_intact" data-section="firstlook">
-            <div class="q-text">Privacy curtains are clean, intact and appropriately positioned.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-bed_linens_pillows_clean" class="three-state" data-field="bed_linens_pillows_clean" data-section="firstlook">
-            <div class="q-text">Bed linens and pillows appear clean and in good condition.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div class="section-label">C · Furniture &amp; Supplies</div>
-
-          <div id="q-closets_dressers_ok" class="three-state" data-field="closets_dressers_ok" data-section="firstlook">
-            <div class="q-text">Closets and dressers appear in good repair.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-room_furniture_safe" class="three-state" data-field="room_furniture_safe" data-section="firstlook">
-            <div class="q-text">Room furniture appears safe and in good repair.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-gloves_stocked_v2" class="three-state" data-field="gloves_stocked_v2" data-section="firstlook">
-            <div class="q-text">Gloves are stocked.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
+          <div id="firstlook-questions"></div>
 
           <label for="room-notes" style="margin-top: 24px;">Room notes</label>
-          <textarea id="room-notes" placeholder="Anything else you noticed about the room as a whole..."></textarea>
+          <textarea id="room-notes" placeholder="Anything else about the room..."></textarea>
         </div>
 
         <div class="button-row">
@@ -225,60 +128,20 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 3: BATHROOM
-           ============================================ -->
+      <!-- STEP 3: BATHROOM -->
       <div id="step-3" class="step hidden">
         <div class="card">
           <h2>Bathroom</h2>
-          <p class="subtitle">Check the shared bathroom for cleanliness, supplies and appropriate storage.</p>
+          <p class="subtitle">Quick check of the shared bathroom.</p>
 
           <button type="button" id="markall-bathroom" class="btn-secondary" onclick="markAllStandard('bathroom')" style="width: 100%; margin: 12px 0;">
-            ✓ Mark all Bathroom items as Meets Standard
+            ✓ Mark all as Meets Standard
           </button>
-          <div id="undo-bathroom" class="hidden" style="text-align: center; font-size: 12px; color: var(--text-muted); margin-bottom: 8px;">
+          <div id="undo-bathroom" class="hidden" style="text-align: center; font-size: 12px; margin-bottom: 8px;">
             <button type="button" onclick="undoMarkAll('bathroom')" style="background: none; border: none; color: var(--purple); text-decoration: underline; cursor: pointer; padding: 0;">Undo mark all</button>
           </div>
 
-          <div class="section-label">Cleanliness</div>
-
-          <div id="q-bathroom_floor_clean" class="three-state" data-field="bathroom_floor_clean" data-section="bathroom">
-            <div class="q-text">Bathroom floor appears clean, dry and not sticky.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-bathroom_no_odor" class="three-state" data-field="bathroom_no_odor" data-section="bathroom">
-            <div class="q-text">Bathroom is free of strong or unpleasant odor.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-bathroom_toilet_sink_clean" class="three-state" data-field="bathroom_toilet_sink_clean" data-section="bathroom">
-            <div class="q-text">Toilet and sink appear clean.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-bathroom_stocked" class="three-state" data-field="bathroom_stocked" data-section="bathroom">
-            <div class="q-text">Bathroom is appropriately stocked with shared facility supplies.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div class="section-label">Storage</div>
-
-          <div id="q-bathroom_no_personal_products" class="three-state" data-field="bathroom_no_personal_products" data-section="bathroom">
-            <div class="q-text">No resident-specific personal hygiene products left in the shared bathroom.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
-
-          <div id="q-bathroom_no_urinals_bedpans" class="three-state" data-field="bathroom_no_urinals_bedpans" data-section="bathroom">
-            <div class="q-text">No resident-specific urinals or bedpans stored in the shared bathroom.</div>
-            <div class="q-buttons"></div>
-            <div class="q-followup hidden"></div>
-          </div>
+          <div id="bathroom-questions"></div>
 
           <label for="bathroom-notes" style="margin-top: 24px;">Bathroom notes</label>
           <textarea id="bathroom-notes" placeholder="Anything else about the bathroom..."></textarea>
@@ -290,18 +153,13 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 4: PER-BED CHECK (repeats per bed)
-           ============================================ -->
+      <!-- STEP 4: PER-BED CHECK -->
       <div id="step-4" class="step hidden">
         <div class="card">
           <h2>Resident Check</h2>
-          <p class="subtitle">Check each bed individually. Tap a tab to switch beds.</p>
+          <p class="subtitle">Check each bed. Tap a tab to switch beds.</p>
 
-          <!-- Bed tabs -->
           <div id="bed-tabs" style="display: flex; gap: 6px; overflow-x: auto; padding: 8px 0 16px; margin-bottom: 8px; border-bottom: 1px solid var(--border);"></div>
-
-          <!-- Bed content (dynamically built by JS) -->
           <div id="bed-content-container"></div>
         </div>
 
@@ -311,9 +169,7 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 5: STAFF CHECK-IN
-           ============================================ -->
+      <!-- STEP 5: STAFF CHECK-IN -->
       <div id="step-5" class="step hidden">
         <div class="card">
           <h2>Staff Check-in</h2>
@@ -351,13 +207,11 @@
         </div>
       </div>
 
-      <!-- ============================================
-           STEP 6: WRAP-UP
-           ============================================ -->
+      <!-- STEP 6: WRAP-UP -->
       <div id="step-6" class="step hidden">
         <div class="card">
           <h2>Wrap-up</h2>
-          <p class="subtitle">Overall impression and any follow-ups.</p>
+          <p class="subtitle">Overall impression and any extra follow-ups.</p>
 
           <label>How did this round feel overall?</label>
           <div class="state-grid">
@@ -367,7 +221,7 @@
             <button type="button" class="state-btn" onclick="selectRating(this, 'concern')">Concern</button>
           </div>
 
-          <label>Does anything else need follow-up beyond what's noted?</label>
+          <label>Any additional follow-ups beyond what you've noted?</label>
           <div class="state-grid">
             <button type="button" class="state-btn" onclick="selectFollowup(this, true)">Yes</button>
             <button type="button" class="state-btn" onclick="selectFollowup(this, false)">No — all noted</button>
@@ -384,7 +238,7 @@
           </div>
 
           <label for="additional-notes">Additional notes</label>
-          <textarea id="additional-notes" placeholder="Anything else to note about this round..."></textarea>
+          <textarea id="additional-notes" placeholder="Anything else..."></textarea>
         </div>
 
         <div class="button-row">
@@ -393,9 +247,7 @@
         </div>
       </div>
 
-      <!-- ============================================
-           SUCCESS SCREEN
-           ============================================ -->
+      <!-- SUCCESS SCREEN -->
       <div id="success-screen" class="hidden">
         <div class="success-check">
           <div class="icon">✓</div>
