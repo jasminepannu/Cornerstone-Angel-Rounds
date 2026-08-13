@@ -4,223 +4,199 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#5B2C87">
-  <title>Cornerstone Angel Rounds — Admin Dashboard</title>
+  <title>Cornerstone Angel Rounds — Admin</title>
   <link rel="stylesheet" href="style.css">
   <style>
     .dash-container {
-      max-width: 1100px;
+      max-width: 1200px;
       margin: 0 auto;
       padding: 20px 16px 40px;
     }
-
     .dash-header {
       background: var(--white);
       border-bottom: 1px solid var(--border);
       padding: 20px 24px;
     }
-
     .dash-header .brand {
-      font-size: 20px;
-      font-weight: 700;
-      color: var(--purple);
-      letter-spacing: -0.3px;
+      font-size: 20px; font-weight: 700; color: var(--purple); letter-spacing: -0.3px;
     }
-
     .dash-header .subtitle {
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-top: 4px;
+      font-size: 13px; color: var(--text-muted); margin-top: 4px;
     }
-
     .dash-header .header-inner {
-      max-width: 1100px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      flex-wrap: wrap;
-      gap: 10px;
+      max-width: 1200px; margin: 0 auto;
+      display: flex; justify-content: space-between; align-items: center;
+      flex-wrap: wrap; gap: 10px;
     }
-
     .refresh-btn {
-      background: var(--white);
-      color: var(--text);
+      background: var(--white); color: var(--text);
       border: 1px solid var(--border-strong);
-      padding: 8px 14px;
-      border-radius: 6px;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
+      padding: 8px 14px; border-radius: 6px;
+      font-size: 13px; font-weight: 500; cursor: pointer;
     }
-
-    .refresh-btn:hover {
-      border-color: var(--purple);
-      color: var(--purple);
-    }
+    .refresh-btn:hover { border-color: var(--purple); color: var(--purple); }
 
     .stat-grid-dash {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 12px;
-      margin-bottom: 20px;
+      gap: 12px; margin-bottom: 20px;
     }
 
     .rounds-table {
-      width: 100%;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 10px;
-      overflow: hidden;
-      border-collapse: collapse;
+      width: 100%; background: var(--white);
+      border: 1px solid var(--border); border-radius: 10px;
+      overflow: hidden; border-collapse: collapse;
     }
-
     .rounds-table th {
-      background: var(--bg);
-      padding: 12px 14px;
-      text-align: left;
-      font-size: 11px;
-      font-weight: 600;
-      color: var(--text-muted);
-      letter-spacing: 1px;
-      text-transform: uppercase;
+      background: var(--bg); padding: 12px 14px; text-align: left;
+      font-size: 11px; font-weight: 600; color: var(--text-muted);
+      letter-spacing: 1px; text-transform: uppercase;
       border-bottom: 1px solid var(--border);
     }
-
     .rounds-table td {
-      padding: 14px;
-      border-bottom: 1px solid var(--border);
-      font-size: 14px;
-      color: var(--text);
+      padding: 14px; border-bottom: 1px solid var(--border);
+      font-size: 14px; color: var(--text);
     }
-
-    .rounds-table tr:last-child td {
-      border-bottom: none;
-    }
+    .rounds-table tr:last-child td { border-bottom: none; }
 
     .compliance-good { color: var(--green); font-weight: 600; }
     .compliance-partial { color: var(--orange); font-weight: 600; }
     .compliance-missing { color: var(--red); font-weight: 600; }
+    .compliance-none { color: var(--text-soft); }
 
     .empty-state {
-      text-align: center;
-      padding: 40px 20px;
-      color: var(--text-muted);
-      font-size: 14px;
+      text-align: center; padding: 40px 20px;
+      color: var(--text-muted); font-size: 14px;
     }
 
     .action-item-row {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-left: 3px solid var(--orange);
-      border-radius: 8px;
-      padding: 16px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      gap: 16px;
+      background: var(--white); border: 1px solid var(--border);
+      border-left: 3px solid var(--orange); border-radius: 8px;
+      padding: 16px; margin-bottom: 10px;
+      display: flex; justify-content: space-between;
+      align-items: flex-start; gap: 16px;
     }
-
-    .action-item-row.urgent {
-      border-left-color: var(--red);
-      background: var(--bg-danger);
-    }
-
-    .action-item-row.closed {
-      opacity: 0.5;
-      border-left-color: var(--green);
-      background: var(--bg-success);
-    }
-
+    .action-item-row.urgent { border-left-color: var(--red); background: var(--bg-danger); }
+    .action-item-row.closed { opacity: 0.5; border-left-color: var(--green); background: var(--bg-success); }
     .action-details { flex: 1; }
-
     .action-title {
-      font-weight: 500;
-      color: var(--text);
-      font-size: 14px;
-      margin-bottom: 6px;
+      font-weight: 500; color: var(--text);
+      font-size: 14px; margin-bottom: 6px;
     }
-
-    .action-meta {
-      font-size: 12px;
-      color: var(--text-muted);
-    }
-
+    .action-meta { font-size: 12px; color: var(--text-muted); }
     .action-meta strong { color: var(--text); }
-
-    .action-buttons {
-      display: flex;
-      gap: 6px;
-      flex-shrink: 0;
-    }
-
+    .action-buttons { display: flex; gap: 6px; flex-shrink: 0; }
     .btn-small {
-      padding: 6px 12px;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
+      padding: 6px 12px; border-radius: 6px;
+      font-size: 12px; font-weight: 500;
       border: 1px solid var(--border-strong);
-      background: var(--white);
-      cursor: pointer;
-      color: var(--text);
+      background: var(--white); cursor: pointer; color: var(--text);
     }
-
-    .btn-small:hover {
-      border-color: var(--purple);
-      color: var(--purple);
-    }
-
-    .btn-close {
-      background: var(--green);
-      color: white;
-      border-color: var(--green);
-    }
-
-    .btn-close:hover {
-      background: #047857;
-      color: white;
-    }
+    .btn-small:hover { border-color: var(--purple); color: var(--purple); }
+    .btn-close { background: var(--green); color: white; border-color: var(--green); }
+    .btn-close:hover { background: #047857; color: white; }
 
     .urgent-tag {
-      display: inline-block;
-      background: var(--red);
-      color: white;
-      font-size: 10px;
-      font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 4px;
-      margin-left: 8px;
-      letter-spacing: 0.5px;
+      display: inline-block; background: var(--red); color: white;
+      font-size: 10px; font-weight: 600; padding: 2px 8px;
+      border-radius: 4px; margin-left: 8px; letter-spacing: 0.5px;
+    }
+    .late-tag {
+      display: inline-block; background: var(--orange); color: white;
+      font-size: 10px; font-weight: 600; padding: 2px 8px;
+      border-radius: 4px; margin-left: 6px;
+    }
+    .ontime-tag {
+      display: inline-block; background: var(--green); color: white;
+      font-size: 10px; font-weight: 600; padding: 2px 8px;
+      border-radius: 4px; margin-left: 6px;
     }
 
     .filter-bar {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 16px;
-      flex-wrap: wrap;
+      display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+      align-items: center;
     }
-
     .filter-btn {
-      padding: 8px 14px;
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 13px;
-      color: var(--text-muted);
-      cursor: pointer;
+      padding: 8px 14px; background: var(--white);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-size: 13px; color: var(--text-muted); cursor: pointer;
     }
-
     .filter-btn.active {
-      background: var(--purple);
-      color: white;
-      border-color: var(--purple);
+      background: var(--purple); color: white; border-color: var(--purple);
+    }
+    .week-nav {
+      display: flex; gap: 6px; align-items: center;
+      font-size: 13px; color: var(--text-muted);
+      margin-left: auto;
+    }
+    .week-nav button {
+      background: white; border: 1px solid var(--border-strong);
+      border-radius: 6px; padding: 6px 10px;
+      font-size: 12px; cursor: pointer; color: var(--text);
     }
 
     .last-updated {
-      font-size: 12px;
-      color: var(--text-soft);
-      margin-top: 20px;
+      font-size: 12px; color: var(--text-soft);
+      margin-top: 20px; text-align: center;
+    }
+
+    /* Weekly Compliance Grid */
+    .weekly-grid {
+      width: 100%; border-collapse: collapse;
+      background: var(--white); border: 1px solid var(--border);
+      border-radius: 10px; overflow: hidden;
+    }
+    .weekly-grid th {
+      background: var(--bg); padding: 12px;
+      font-size: 12px; font-weight: 600;
+      color: var(--text-muted); text-transform: uppercase;
+      letter-spacing: 0.8px;
+      border-bottom: 1px solid var(--border);
       text-align: center;
+    }
+    .weekly-grid th:first-child { text-align: left; }
+    .weekly-grid td {
+      padding: 14px 12px; border-bottom: 1px solid var(--border);
+      font-size: 14px; text-align: center;
+    }
+    .weekly-grid td:first-child { text-align: left; }
+    .weekly-grid tr:last-child td { border-bottom: none; }
+    .weekly-grid .day-cell {
+      font-size: 20px; font-weight: 600;
+    }
+    .weekly-grid .day-complete { color: var(--green); }
+    .weekly-grid .day-partial { color: var(--orange); }
+    .weekly-grid .day-missed { color: var(--red); }
+    .weekly-grid .day-future { color: var(--text-soft); }
+    .weekly-grid .angel-name-cell {
+      font-weight: 600; color: var(--text);
+    }
+    .weekly-grid .angel-person {
+      font-size: 12px; color: var(--text-muted);
+      font-weight: normal; margin-top: 2px;
+    }
+    .weekly-grid .score-cell {
+      font-weight: 600;
+    }
+
+    /* Currently rounding banner */
+    .now-rounding {
+      background: var(--bg-success); border: 1px solid var(--green);
+      border-radius: 10px; padding: 16px; margin-bottom: 20px;
+    }
+    .now-rounding-title {
+      font-size: 12px; color: var(--green); font-weight: 600;
+      letter-spacing: 1px; text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .now-rounding-list {
+      font-size: 14px; color: var(--text);
+    }
+    .now-rounding-item {
+      display: inline-block; background: white;
+      padding: 6px 12px; border-radius: 6px;
+      border: 1px solid var(--green); margin-right: 6px;
+      margin-bottom: 6px; font-size: 13px;
     }
   </style>
 </head>
@@ -256,12 +232,13 @@
     <div class="dash-container">
 
       <div class="tabs">
-        <button class="tab active" onclick="switchTab(this, 'board')">Board</button>
+        <button class="tab active" onclick="switchTab(this, 'board')">Today</button>
+        <button class="tab" onclick="switchTab(this, 'weekly')">Weekly</button>
         <button class="tab" onclick="switchTab(this, 'actions')">Action Items <span id="actions-count-badge"></span></button>
         <button class="tab" onclick="switchTab(this, 'rounds')">Recent Rounds</button>
       </div>
 
-      <!-- BOARD TAB -->
+      <!-- TODAY TAB -->
       <div id="tab-board">
         <div class="stat-grid-dash">
           <div class="stat-card" id="stat-angels">
@@ -286,6 +263,11 @@
           </div>
         </div>
 
+        <div id="now-rounding-panel" class="now-rounding hidden">
+          <div class="now-rounding-title">🟢 Currently rounding</div>
+          <div class="now-rounding-list" id="now-rounding-list"></div>
+        </div>
+
         <div id="missing-banner" class="missing-banner hidden">
           <strong>[!] Angels not yet rounded today</strong>
           <div class="names" id="missing-names"></div>
@@ -298,15 +280,52 @@
               <th>Angel</th>
               <th>Assigned rooms</th>
               <th>Rounded</th>
+              <th>Submit times</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody id="angel-compliance-body">
-            <tr><td colspan="4" class="empty-state">Loading...</td></tr>
+            <tr><td colspan="5" class="empty-state">Loading...</td></tr>
           </tbody>
         </table>
 
         <div class="last-updated" id="last-updated"></div>
+      </div>
+
+      <!-- WEEKLY TAB -->
+      <div id="tab-weekly" class="hidden">
+        <div class="filter-bar">
+          <div>
+            <strong id="week-label" style="font-size: 15px; color: var(--text);">This week</strong>
+          </div>
+          <div class="week-nav">
+            <button onclick="changeWeek(-1)">← Previous</button>
+            <span id="week-range" style="font-size: 13px; color: var(--text);"></span>
+            <button onclick="changeWeek(1)" id="next-week-btn">Next →</button>
+          </div>
+        </div>
+        <table class="weekly-grid">
+          <thead>
+            <tr>
+              <th>Angel</th>
+              <th>Mon</th>
+              <th>Tue</th>
+              <th>Wed</th>
+              <th>Thu</th>
+              <th>Fri</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody id="weekly-grid-body">
+            <tr><td colspan="7" class="empty-state">Loading...</td></tr>
+          </tbody>
+        </table>
+        <div style="margin-top: 16px; font-size: 12px; color: var(--text-muted);">
+          <span style="color: var(--green); font-weight: 600;">✓</span> All assigned rooms completed &nbsp;·&nbsp;
+          <span style="color: var(--orange); font-weight: 600;">⚠</span> Partial &nbsp;·&nbsp;
+          <span style="color: var(--red); font-weight: 600;">✗</span> Missed &nbsp;·&nbsp;
+          <span style="color: var(--text-soft);">—</span> Not yet / Unfilled
+        </div>
       </div>
 
       <!-- ACTION ITEMS TAB -->
@@ -332,7 +351,7 @@
         <table class="rounds-table">
           <thead>
             <tr>
-              <th>Time</th>
+              <th>Submitted</th>
               <th>Angel</th>
               <th>Room</th>
               <th>Beds</th>
