@@ -1,5 +1,5 @@
 // ============================================================
-// CORNERSTONE ANGEL ROUNDS — Admin Dashboard v2
+// CORNERSTONE ANGEL ROUNDS — Admin Dashboard v2 (timezone fixed)
 // ============================================================
 
 const SUPABASE_URL = 'https://qrvmlfkgpuqsogijlpoe.supabase.co';
@@ -19,6 +19,22 @@ let currentWeekOffset = 0;
 
 const STANDUP_DEADLINE_HOUR = 10;
 const IN_PROGRESS_WINDOW_MIN = 15;
+
+// ============================================
+// TIMEZONE-SAFE LOCAL DATE HELPER
+// ============================================
+
+function getLocalDateString(d) {
+  const date = d || new Date();
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+// ============================================
+// STARTUP
+// ============================================
 
 window.addEventListener('DOMContentLoaded', async () => {
   await loadPasscode();
@@ -55,6 +71,10 @@ async function loadPasscode() {
   }
 }
 
+// ============================================
+// PASSCODE
+// ============================================
+
 function checkPasscode() {
   const input = document.getElementById('passcode-input').value.trim();
   const errorBox = document.getElementById('passcode-error');
@@ -87,12 +107,16 @@ function switchTab(btn, tabName) {
   if (tabName === 'weekly') renderWeekly();
 }
 
+// ============================================
+// LOAD DATA
+// ============================================
+
 async function loadDashboard() {
   try {
-    const today = new Date().toISOString().split('T')[0];
-    const twoWeeksAgo = new Date();
-    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 30);
-    const startDate = twoWeeksAgo.toISOString().split('T')[0];
+    const today = getLocalDateString();
+    const startDateD = new Date();
+    startDateD.setDate(startDateD.getDate() - 30);
+    const startDate = getLocalDateString(startDateD);
 
     const [angels, beds, rounds, roundBeds, actions] = await Promise.all([
       db.from('angels').select('*').eq('active', true).order('id'),
@@ -270,6 +294,10 @@ function renderAngelCompliance(angels, todayRounds) {
   }).join('');
 }
 
+// ============================================
+// WEEKLY TAB
+// ============================================
+
 function changeWeek(delta) {
   currentWeekOffset += delta;
   if (currentWeekOffset > 0) currentWeekOffset = 0;
@@ -294,8 +322,8 @@ function getWeekDates(offset) {
 
 function renderWeekly() {
   const days = getWeekDates(currentWeekOffset);
-  const dayStrings = days.map(d => d.toISOString().split('T')[0]);
-  const today = new Date().toISOString().split('T')[0];
+  const dayStrings = days.map(d => getLocalDateString(d));
+  const today = getLocalDateString();
 
   const weekLabel = document.getElementById('week-label');
   if (currentWeekOffset === 0) weekLabel.textContent = 'This week';
@@ -366,6 +394,10 @@ function renderWeekly() {
       '</tr>';
   }).join('');
 }
+
+// ============================================
+// ACTION ITEMS TAB
+// ============================================
 
 function filterActions(btn, filter) {
   document.querySelectorAll('#tab-actions .filter-btn').forEach(b => b.classList.remove('active'));
@@ -444,6 +476,10 @@ async function reopenAction(id) {
   }
 }
 
+// ============================================
+// RECENT ROUNDS TAB
+// ============================================
+
 function filterRounds(btn, filter) {
   document.querySelectorAll('#tab-rounds .filter-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
@@ -452,10 +488,10 @@ function filterRounds(btn, filter) {
 }
 
 function renderRounds() {
-  const today = new Date().toISOString().split('T')[0];
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
-  const weekAgoStr = weekAgo.toISOString().split('T')[0];
+  const today = getLocalDateString();
+  const weekAgoD = new Date();
+  weekAgoD.setDate(weekAgoD.getDate() - 7);
+  const weekAgoStr = getLocalDateString(weekAgoD);
 
   let rounds = roundsData.filter(r => r.round_status === 'submitted');
   if (currentRoundFilter === 'today') rounds = rounds.filter(r => r.round_date === today);
