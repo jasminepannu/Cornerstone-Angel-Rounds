@@ -7,7 +7,6 @@
   <title>Cornerstone Angel Rounds — Admin Dashboard</title>
   <link rel="stylesheet" href="style.css">
   <style>
-    /* Dashboard-specific styles */
     .dash-container {
       max-width: 1100px;
       margin: 0 auto;
@@ -98,20 +97,9 @@
       border-bottom: none;
     }
 
-    .rounds-table .compliance-good {
-      color: var(--green);
-      font-weight: 600;
-    }
-
-    .rounds-table .compliance-partial {
-      color: var(--orange);
-      font-weight: 600;
-    }
-
-    .rounds-table .compliance-missing {
-      color: var(--red);
-      font-weight: 600;
-    }
+    .compliance-good { color: var(--green); font-weight: 600; }
+    .compliance-partial { color: var(--orange); font-weight: 600; }
+    .compliance-missing { color: var(--red); font-weight: 600; }
 
     .empty-state {
       text-align: center;
@@ -144,9 +132,7 @@
       background: var(--bg-success);
     }
 
-    .action-details {
-      flex: 1;
-    }
+    .action-details { flex: 1; }
 
     .action-title {
       font-weight: 500;
@@ -160,9 +146,7 @@
       color: var(--text-muted);
     }
 
-    .action-meta strong {
-      color: var(--text);
-    }
+    .action-meta strong { color: var(--text); }
 
     .action-buttons {
       display: flex;
@@ -242,7 +226,7 @@
 </head>
 <body>
 
-  <!-- Passcode gate (same as angel app) -->
+  <!-- Passcode gate -->
   <div id="passcode-screen" class="passcode-gate">
     <div class="brand">Cornerstone</div>
     <div class="tagline">Admin Dashboard</div>
@@ -271,17 +255,14 @@
 
     <div class="dash-container">
 
-      <!-- Tabs -->
       <div class="tabs">
         <button class="tab active" onclick="switchTab(this, 'board')">Board</button>
         <button class="tab" onclick="switchTab(this, 'actions')">Action Items <span id="actions-count-badge"></span></button>
         <button class="tab" onclick="switchTab(this, 'rounds')">Recent Rounds</button>
       </div>
 
-      <!-- ============ BOARD TAB ============ -->
+      <!-- BOARD TAB -->
       <div id="tab-board">
-
-        <!-- Stat cards -->
         <div class="stat-grid-dash">
           <div class="stat-card" id="stat-angels">
             <div class="stat-number">--</div>
@@ -305,13 +286,11 @@
           </div>
         </div>
 
-        <!-- Missing angels banner -->
         <div id="missing-banner" class="missing-banner hidden">
           <strong>[!] Angels not yet rounded today</strong>
           <div class="names" id="missing-names"></div>
         </div>
 
-        <!-- Angel-by-angel compliance table -->
         <h3 style="margin: 20px 0 10px; font-size: 15px; color: var(--text);">Today's rounding status by angel</h3>
         <table class="rounds-table">
           <thead>
@@ -330,7 +309,7 @@
         <div class="last-updated" id="last-updated"></div>
       </div>
 
-      <!-- ============ ACTION ITEMS TAB ============ -->
+      <!-- ACTION ITEMS TAB -->
       <div id="tab-actions" class="hidden">
         <div class="filter-bar">
           <button class="filter-btn active" onclick="filterActions(this, 'open')">Open</button>
@@ -343,7 +322,7 @@
         </div>
       </div>
 
-      <!-- ============ RECENT ROUNDS TAB ============ -->
+      <!-- RECENT ROUNDS TAB -->
       <div id="tab-rounds" class="hidden">
         <div class="filter-bar">
           <button class="filter-btn active" onclick="filterRounds(this, 'today')">Today</button>
