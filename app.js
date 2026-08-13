@@ -1,5 +1,5 @@
 // ============================================================
-// CORNERSTONE ANGEL ROUNDS — LEAN v2 (clean rebuild)
+// CORNERSTONE ANGEL ROUNDS — LEAN v2 (with bed tracking + tz fix)
 // ============================================================
 
 const SUPABASE_URL = 'https://qrvmlfkgpuqsogijlpoe.supabase.co';
@@ -72,6 +72,18 @@ let bedData = [];
 let followupData = { category: null, description: '' };
 
 // ============================================
+// TIMEZONE-SAFE LOCAL DATE HELPER (bug fix)
+// ============================================
+
+function getLocalDateString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return y + '-' + m + '-' + day;
+}
+
+// ============================================
 // STARTUP
 // ============================================
 
@@ -110,12 +122,6 @@ async function loadFacilityData() {
 
     const { data: actions } = await db.from('action_items').select('*').eq('status', 'open');
     recentActionItems = actions || [];
-
-    console.log('Loaded:', {
-      angels: angelsData.length,
-      beds: bedsData.length,
-      openActions: recentActionItems.length
-    });
   } catch (err) {
     console.error('Error loading data:', err);
     alert('Could not connect to the database. Please refresh.');
@@ -206,7 +212,7 @@ async function renderHomeRecognized(angel) {
   document.getElementById('home-greeting').textContent = timeGreeting + ', ' + firstName + '!';
   document.getElementById('home-subtitle').textContent = angel.role + ' · Today\'s rounds';
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const { data: myRounds } = await db.from('rounds')
     .select('room_number, submitted_at, round_status')
     .eq('angel_role', angel.role)
@@ -253,7 +259,7 @@ function startRoundForRoom(room) {
   resetRoundData();
   roundData.angel_role = currentAngel.role;
   roundData.angel_person = currentAngel.current_person;
-  roundData.round_date = new Date().toISOString().split('T')[0];
+  roundData.round_date = getLocalDateString();
   roundData.room_number = room;
 
   const roomBeds = bedsData.filter(b => b.room_number === room);
@@ -285,7 +291,7 @@ function goToHome() {
 }
 
 // ============================================
-// STEP NAVIGATION
+// STEP NAVIGATION (with bed-completion protection)
 // ============================================
 
 const STEP_NAMES = {
@@ -302,6 +308,15 @@ function goToStep(step) {
     if (currentStep === 1) {
       if (!roundData.angel_role || !roundData.room_number) {
         alert('Please select your role and a room before continuing.');
+        return;
+      }
+    }
+    // BLOCK leaving Step 4 if any bed hasn't been started
+    if (currentStep === 4) {
+      const unfinishedBeds = bedData.filter(b => !b.resident_state);
+      if (unfinishedBeds.length > 0) {
+        const bedNames = unfinishedBeds.map(b => b.bed_code).join(', ');
+        alert('Please complete all beds before continuing.\n\nStill needed: ' + bedNames);
         return;
       }
     }
@@ -348,7 +363,7 @@ function buildThreeStateHTML(field, text, section, bedIdx, tip) {
 function attachThreeStateHandlers(container) {
   container.querySelectorAll('.three-state').forEach(q => {
     const buttons = q.querySelectorAll('.ts-btn');
-    if (buttons[0].onclick) return; // already attached
+    if (buttons[0].onclick) return;
     buttons[0].onclick = () => selectThreeState(q, 'Meets Standard', buttons[0]);
     buttons[1].onclick = () => selectThreeState(q, 'Needs Attention', buttons[1]);
     buttons[2].onclick = () => selectThreeState(q, 'N/A', buttons[2]);
@@ -441,6 +456,12 @@ function selectThreeState(qEl, value, btnEl) {
       btn.textContent = '✓ Mark all as Meets Standard';
       document.getElementById('undo-' + section).classList.add('hidden');
     }
+  }
+
+  // Refresh bed indicators when a per-bed question is answered
+  if (bedIdx !== undefined) {
+    if (typeof refreshBedTabIndicators === 'function') refreshBedTabIndicators();
+    if (typeof updateBedProgress === 'function') updateBedProgress();
   }
 }
 
@@ -604,27 +625,73 @@ function makeEmptyBedRecord(bedCode) {
 }
 
 // ============================================
-// STEP 4 - BED TABS + CONTENT
+// STEP 4 - BED TABS + CONTENT (with progress tracking)
 // ============================================
 
 function buildBedTabs() {
   const container = document.getElementById('bed-tabs');
   container.innerHTML = '';
+
+  // Progress counter above tabs
+  const counter = document.createElement('div');
+  counter.id = 'bed-progress-counter';
+  counter.style.cssText = 'width: 100%; font-size: 13px; margin-bottom: 8px; font-weight: 500;';
+  container.appendChild(counter);
+
   bedData.forEach((bed, idx) => {
     const tab = document.createElement('button');
     tab.type = 'button';
-    tab.textContent = bed.bed_code;
     tab.dataset.idx = idx;
-    tab.style.cssText = 'padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; font-weight: 500; cursor: pointer; flex-shrink: 0; color: var(--text-muted);';
+    tab.style.cssText = 'padding: 8px 14px; border-radius: 6px; border: 1px solid var(--border-strong); background: white; font-size: 13px; font-weight: 500; cursor: pointer; flex-shrink: 0; color: var(--text-muted); display: flex; align-items: center; gap: 6px;';
     tab.onclick = () => showBedContent(idx);
     container.appendChild(tab);
   });
+
+  updateBedProgress();
+  refreshBedTabIndicators();
+}
+
+function updateBedProgress() {
+  const counter = document.getElementById('bed-progress-counter');
+  if (!counter) return;
+  const done = bedData.filter(b => b.resident_state).length;
+  const total = bedData.length;
+  counter.textContent = 'Beds started: ' + done + ' of ' + total + (done < total ? ' — please check all beds before continuing' : ' ✓ all beds started');
+  counter.style.color = done === total ? 'var(--green)' : 'var(--orange)';
+}
+
+function refreshBedTabIndicators() {
+  document.querySelectorAll('#bed-tabs button[data-idx]').forEach(tab => {
+    const idx = parseInt(tab.dataset.idx);
+    const bed = bedData[idx];
+
+    let statusDot, statusColor;
+    if (!bed.resident_state) {
+      statusDot = '●';
+      statusColor = 'var(--red)';
+    } else if (isBedCurrentlyIncomplete(bed)) {
+      statusDot = '●';
+      statusColor = 'var(--orange)';
+    } else {
+      statusDot = '✓';
+      statusColor = 'var(--green)';
+    }
+
+    tab.innerHTML = '<span style="color: ' + statusColor + '; font-size: 12px;">' + statusDot + '</span> ' + bed.bed_code;
+  });
+}
+
+function isBedCurrentlyIncomplete(bed) {
+  if (bed.resident_state === 'away') return false;
+  if (bed.resident_state === 'empty_bed') return !bed.bed_ready_for_admission;
+  const requiredFields = ['call_light_ok', 'water_available', 'bed_safe_and_clear', 'bedside_organized'];
+  return requiredFields.some(f => !bed[f]);
 }
 
 function showBedContent(idx) {
   currentBedTab = idx;
 
-  document.querySelectorAll('#bed-tabs button').forEach((t, i) => {
+  document.querySelectorAll('#bed-tabs button[data-idx]').forEach((t, i) => {
     if (i === idx) {
       t.style.background = 'var(--purple)';
       t.style.color = 'white';
@@ -820,6 +887,9 @@ function selectBedState(idx, btn, state) {
       conversation.classList.add('hidden');
     }
   }
+
+  refreshBedTabIndicators();
+  updateBedProgress();
 }
 
 function toggleEquipment(idx, eq, btn, restore) {
